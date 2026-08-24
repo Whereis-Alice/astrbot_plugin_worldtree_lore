@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WorldTree Lore visual harness</title>
+    <link rel="stylesheet" href="../pages/worldtree/style.css" />
+  </head>
+  <body>
+    <script>
+      (() => {
+        const templates = [
+          {key: "common", label: "常规条目", defaults: {enabled: true, priority: 50, keywords: [], duration: 180, times: 5, probability: 1}},
+          {key: "resident", label: "常驻条目", defaults: {enabled: true, priority: 10, keywords: ["re:.*"], duration: 0, times: 0, probability: 1}},
+          {key: "chance", label: "随机条目", defaults: {enabled: true, priority: 30, keywords: ["re:.*"], duration: 180, times: 1, probability: .05}},
+          {key: "schedule", label: "日程条目", defaults: {enabled: true, priority: 80, keywords: [], cron: "0 9 * * 1-5", duration: 86400, times: 0, probability: 1}}
+        ];
+        let revision = 7;
+        let nextId = 5;
+        let entries = [
+          {id: "root-1", name: "新芽的约定", content: "当前的冒险刚刚开始。请以温暖、好奇且不抢夺玩家选择权的方式回应。", enabled: true, priority: 10, keywords: ["冒险", "启程"], keyword_mode: "modern", scope: [], cron: "", duration: 0, times: 0, probability: 1, folder: "世界观", tags: ["主线", "基调"], template: "resident", created_at: 1, updated_at: 1},
+          {id: "root-2", name: "雾港档案", content: "雾港是一座被盐雾和钟声包围的海港城。城民相信潮汐会带回失去的名字。", enabled: true, priority: 40, keywords: ["雾港", "港口", "钟声"], keyword_mode: "modern", scope: [], cron: "", duration: 300, times: 5, probability: 1, folder: "地点", tags: ["城市", "主线"], template: "common", created_at: 1, updated_at: 1},
+          {id: "root-3", name: "周一晨会", content: "今天是工作日。提醒用户列出最重要的一项待办，并保持回答简洁。", enabled: true, priority: 80, keywords: [], keyword_mode: "modern", scope: [], cron: "0 9 * * 1-5", duration: 3600, times: 0, probability: 1, folder: "日程", tags: ["工作"], template: "schedule", created_at: 1, updated_at: 1},
+          {id: "root-4", name: "旧码头彩蛋", content: "提到旧码头时，有 5% 的概率让路边的白猫叼来一枚锈迹斑斑的船票。", enabled: false, priority: 30, keywords: ["旧码头"], keyword_mode: "modern", scope: [], cron: "", duration: 180, times: 1, probability: .05, folder: "彩蛋", tags: ["随机", "猫"], template: "chance", created_at: 1, updated_at: 1}
+        ];
+        const clone = (value) => JSON.parse(JSON.stringify(value));
+        const summary = (entry) => ({...clone(entry), preview: entry.content.length > 180 ? entry.content.slice(0, 179) + "…" : entry.content});
+        const stats = () => ({total: entries.length, enabled: entries.filter((entry) => entry.enabled).length, disabled: entries.filter((entry) => !entry.enabled).length, folders: new Set(entries.map((entry) => entry.folder).filter(Boolean)).size, tags: new Set(entries.flatMap((entry) => entry.tags)).size, scheduled: entries.filter((entry) => entry.cron).length});
+        const facets = () => ({folders: [...new Set(entries.map((entry) => entry.folder).filter(Boolean))], tags: [...new Set(entries.flatMap((entry) => entry.tags))]});
+        const touch = () => ++revision;
+        const filtered = (params) => entries.filter((entry) => {
+          const query = (params.q || "").trim().toLowerCase();
+          const haystack = [entry.name, entry.content, entry.folder, ...entry.tags, ...entry.keywords].join(" ").toLowerCase();
+          return (!query || query.split(/\s+/).every((word) => haystack.includes(word))) &&
+            (params.status === "enabled" ? entry.enabled : params.status === "disabled" ? !entry.enabled : true) &&
+            (!params.folder || params.folder === entry.folder) && (!params.tag || entry.tags.includes(params.tag));
+        });
+        const visualParams = new URLSearchParams(window.location.search);
+        window.AstrBotPluginPage = {
+          ready: async () => ({locale: "zh-CN", isDark: visualParams.get("theme") === "dark"}),
+          getLocale: () => "zh-CN",
+          t: (_key, fallback) => fallback,
+          onContext: () => () => {},
+          apiGet: async (endpoint, params = {}) => {
+            if (endpoint === "entries") {
+              const items = filtered(params).sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name, "zh-CN"));
+              const size = Number(params.page_size || 30); const requested = Number(params.page || 1); const pages = Math.max(1, Math.ceil(items.length / size)); const page = Math.min(Math.max(1, requested), pages);
+              return {revision, entries: items.slice((page - 1) * size, page * size).map(summary), pagination: {page, page_size: size, total: items.length, total_pages: pages}, facets: facets(), stats: stats(), templates: clone(templates)};
+            }
+            if (endpoint === "diagnostics") return {revision, stats: stats(), invalid_cron_entries: {}};
+            if (endpoint.startsWith("entry/")) {
+              const id = endpoint.split("/")[1]; const entry = entries.find((item) => item.id === id); if (!entry) throw new Error("找不到该条目"); return {revision, entry: clone(entry), templates: clone(templates)};
+            }
+            throw new Error("未找到模拟接口");
+          },
+          apiPost: async (endpoint, payload) => {
+            if (payload.revision !== revision) throw new Error("条目库已被其他操作更新。请刷新列表后再保存，避免覆盖新修改。");
+            if (endpoint === "entry/create") { const entry = {...clone(payload.entry), id: `new-${nextId++}`, created_at: Date.now(), updated_at: Date.now()}; entries.push(entry); touch(); return {revision, entry: clone(entry)}; }
+            if (endpoint === "entries/bulk") { let changed = entries.filter((entry) => payload.entry_ids.includes(entry.id)); if (payload.action === "delete") entries = entries.filter((entry) => !payload.entry_ids.includes(entry.id)); else changed.forEach((entry) => { if (payload.action === "set_enabled") entry.enabled = payload.value; if (payload.action === "set_folder") entry.folder = payload.value; if (payload.action === "add_tag" && !entry.tags.includes(payload.value)) entry.tags.push(payload.value); if (payload.action === "remove_tag") entry.tags = entry.tags.filter((tag) => tag !== payload.value); }); touch(); return {revision, changed: changed.map((entry) => entry.id), missing: []}; }
+            const parts = endpoint.split("/"); const id = parts[1]; const action = parts[2]; const entry = entries.find((item) => item.id === id); if (!entry) throw new Error("找不到该条目"); if (action === "toggle") entry.enabled = payload.enabled; if (action === "save") Object.assign(entry, clone(payload.entry)); if (action === "delete") entries = entries.filter((item) => item.id !== id); touch(); return action === "delete" ? {revision, deleted: summary(entry)} : {revision, entry: summary(entry)};
+          },
+          upload: async (_endpoint, _file) => ({revision, report: {added: 0, replaced: 0, renamed: 0, skipped: 0, invalid: 0, messages: ["视觉测试：未写入真实文件"]}}),
+          download: async () => ({filename: "visual-test.yaml"})
+        };
+      })();
+    </script>
+    <script type="module">
+      const response = await fetch("../pages/worldtree/index.html");
+      if (!response.ok) {
+        throw new Error(`无法加载页面模板：HTTP ${response.status}`);
+      }
+
+      const html = await response.text();
+      const parsed = new DOMParser().parseFromString(html, "text/html");
+      const pageNodes = [...parsed.body.children]
+        .filter((node) => !node.matches('script[src$="app.js"]'))
+        .map((node) => document.importNode(node, true));
+
+      document.body.replaceChildren(...pageNodes);
+
+      // Python's simple HTTP server may report .js as text/plain on Windows,
+      // which browsers correctly reject for module imports. Loading through a
+      // typed Blob keeps this visual-only harness independent of server MIME
+      // configuration while executing the exact production source.
+      const scriptResponse = await fetch("../pages/worldtree/app.js");
+      if (!scriptResponse.ok) {
+        throw new Error(`无法加载页面脚本：HTTP ${scriptResponse.status}`);
+      }
+      const moduleUrl = URL.createObjectURL(
+        new Blob([await scriptResponse.text()], {type: "text/javascript"}),
+      );
+      try {
+        await import(moduleUrl);
+      } finally {
+        URL.revokeObjectURL(moduleUrl);
+      }
+    </script>
+  </body>
+</html>

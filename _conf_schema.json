@@ -1,0 +1,61 @@
+{
+  "max_inject_count": {
+    "type": "int",
+    "description": "单次最多注入条目数",
+    "hint": "同一轮命中的条目按优先级从小到大选择。设为 0 可临时关闭所有注入。",
+    "default": 6,
+    "slider": {"min": 0, "max": 50, "step": 1}
+  },
+  "max_injected_chars": {
+    "type": "int",
+    "description": "单次最多注入字符数",
+    "hint": "超出预算的低优先级条目会跳过，不会截断条目内容。字符数不是 token 数，但可防止提示词意外膨胀。",
+    "default": 12000,
+    "slider": {"min": 500, "max": 100000, "step": 500}
+  },
+  "injection_target": {
+    "type": "string",
+    "description": "注入位置",
+    "hint": "推荐使用“本轮临时用户上下文”：不写入历史，也更有利于模型服务商的系统提示词缓存。只有必须获得 system 层级优先级时才选 system_prompt。",
+    "options": ["extra_user_content", "system_prompt"],
+    "default": "extra_user_content"
+  },
+  "allow_same_priority": {
+    "type": "bool",
+    "description": "允许当前会话中同优先级条目共存",
+    "hint": "关闭后，新激活的同优先级条目会替换旧条目；开启后会按名称稳定排序并共同注入。",
+    "default": true
+  },
+  "session_idle_minutes": {
+    "type": "int",
+    "description": "会话运行态保留分钟数",
+    "hint": "未活动会话的临时激活/屏蔽状态会在后续消息处理时清理；重载插件也会清空这些运行态。",
+    "default": 1440,
+    "slider": {"min": 5, "max": 43200, "step": 5}
+  },
+  "enable_llm_entry_tool": {
+    "type": "bool",
+    "description": "允许模型为管理员创建条目",
+    "hint": "默认关闭。开启后仅管理员发起的模型请求会看到 worldtree_lore_add_entry 工具；模型创建的条目会归入“LLM 创建”文件夹和标签，建议定期在管理台复核。",
+    "default": false
+  },
+  "entry_storage": {
+    "type": "list",
+    "description": "世界树条目内部存储",
+    "hint": "请在“世界树管理台”管理条目；该内部字段隐藏是为了避免与管理台同时编辑造成覆盖。",
+    "default": [],
+    "invisible": true
+  },
+  "library_revision": {
+    "type": "int",
+    "description": "世界树条目库修订号",
+    "default": 0,
+    "invisible": true
+  },
+  "data_version": {
+    "type": "int",
+    "description": "世界树存储格式版本",
+    "default": 2,
+    "invisible": true
+  }
+}

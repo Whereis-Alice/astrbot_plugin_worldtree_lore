@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "display_name": "WorldTree Lore",
+    "desc": "A searchable, bulk-manageable dynamic lorebook that injects temporary context by keyword, scope, or Cron rule."
+  },
+  "pages": {
+    "worldtree": {
+      "title": "WorldTree Console",
+      "description": "Search, filter, bulk-edit, import, and export lore entries."
+    }
+  }
+}

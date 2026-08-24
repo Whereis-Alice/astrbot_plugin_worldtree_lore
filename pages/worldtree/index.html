@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="世界树·世界书的检索、批量编辑、导入和导出管理台"
+    />
+    <title>世界树管理台</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="tree-canopy" aria-hidden="true"></div>
+    <div class="app-shell" id="appShell">
+      <header class="topbar">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <path d="M32 56V29" class="trunk" />
+            <path d="M32 41 15 27M32 37l17-15M32 28 22 13M32 25l11-13" class="branches" />
+            <circle cx="14" cy="26" r="8" class="leaf leaf-a" />
+            <circle cx="50" cy="21" r="9" class="leaf leaf-b" />
+            <circle cx="21" cy="12" r="8" class="leaf leaf-c" />
+            <circle cx="44" cy="11" r="8" class="leaf leaf-a" />
+            <path d="M15 55h34" class="ground" />
+          </svg>
+          <div>
+            <p class="eyebrow">WORLD TREE LORE</p>
+            <h1 id="pageTitle">世界树管理台</h1>
+          </div>
+        </div>
+        <div class="top-actions">
+          <span class="connection" id="connectionState" aria-live="polite">正在连接</span>
+          <button class="button button-ghost" id="refreshButton" type="button" title="重新读取条目">
+            <span aria-hidden="true">↻</span> 刷新
+          </button>
+          <button class="button button-primary" id="newEntryButton" type="button">
+            <span aria-hidden="true">＋</span> 新建条目
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar" id="sidebar" aria-label="筛选和概览">
+          <button class="mobile-filter-toggle" id="mobileFilterToggle" type="button" aria-expanded="false">
+            <span><span aria-hidden="true">⌕</span> 筛选与概览</span>
+            <strong id="mobileFilterState">展开</strong>
+          </button>
+          <section class="root-card">
+            <div class="root-card-head">
+              <span class="root-dot" aria-hidden="true"></span>
+              <span>条目根系</span>
+            </div>
+            <div class="stat-grid" id="statsGrid" aria-live="polite">
+              <div class="stat"><strong>—</strong><span>全部</span></div>
+              <div class="stat"><strong>—</strong><span>启用</span></div>
+              <div class="stat"><strong>—</strong><span>文件夹</span></div>
+              <div class="stat"><strong>—</strong><span>日程</span></div>
+            </div>
+          </section>
+
+          <section class="filter-section" aria-labelledby="filterHeading">
+            <div class="section-heading">
+              <h2 id="filterHeading">定位条目</h2>
+              <button class="text-button" id="clearFiltersButton" type="button">清除</button>
+            </div>
+            <label class="field-label" for="searchInput">搜索</label>
+            <div class="search-field">
+              <span aria-hidden="true">⌕</span>
+              <input
+                id="searchInput"
+                type="search"
+                maxlength="200"
+                placeholder="名称、内容、标签、关键词…"
+                autocomplete="off"
+              />
+            </div>
+
+            <label class="field-label" for="statusFilter">状态</label>
+            <select id="statusFilter">
+              <option value="all">全部状态</option>
+              <option value="enabled">仅启用</option>
+              <option value="disabled">仅禁用</option>
+            </select>
+
+            <label class="field-label" for="folderFilter">文件夹</label>
+            <select id="folderFilter"><option value="">全部文件夹</option></select>
+
+            <label class="field-label" for="tagFilter">标签</label>
+            <select id="tagFilter"><option value="">全部标签</option></select>
+          </section>
+
+          <section class="sidebar-actions" aria-label="文件操作">
+            <button class="button button-secondary" id="importButton" type="button">
+              <span aria-hidden="true">⇧</span> 导入世界书
+            </button>
+            <div class="export-row">
+              <button class="button button-secondary" id="exportYamlButton" type="button">导出 YAML</button>
+              <button class="button button-secondary" id="exportJsonButton" type="button">JSON</button>
+            </div>
+          </section>
+
+          <p class="sidebar-note">
+            搜索、筛选与分页都在服务端完成；即使条目很多，也无需逐个展开。
+          </p>
+        </aside>
+
+        <main class="content" aria-live="polite">
+          <section class="content-heading">
+            <div>
+              <p class="eyebrow" id="resultCaption">条目列表</p>
+              <h2 id="resultTitle">正在读取枝叶…</h2>
+            </div>
+            <div class="view-options">
+              <button class="button button-secondary button-compact" id="selectPageButton" type="button" disabled>
+                选择本页
+              </button>
+              <label for="pageSizeSelect">每页</label>
+              <select id="pageSizeSelect" aria-label="每页条目数">
+                <option value="20">20</option>
+                <option value="30" selected>30</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </section>
+
+          <section class="bulk-bar" id="bulkBar" hidden aria-label="批量操作">
+            <strong id="selectedCount">已选择 0 项</strong>
+            <div class="bulk-controls">
+              <select id="bulkAction" aria-label="批量操作">
+                <option value="set_enabled_true">批量启用</option>
+                <option value="set_enabled_false">批量禁用</option>
+                <option value="set_folder">移动到文件夹</option>
+                <option value="add_tag">添加标签</option>
+                <option value="remove_tag">移除标签</option>
+                <option value="delete">删除所选条目</option>
+              </select>
+              <input id="bulkValue" type="text" maxlength="80" placeholder="文件夹或标签" />
+              <button class="button button-secondary" id="bulkApplyButton" type="button">应用</button>
+              <button class="text-button" id="clearSelectionButton" type="button">取消选择</button>
+            </div>
+          </section>
+
+          <div class="entry-list" id="entryList" aria-label="世界书条目"></div>
+          <div class="empty-state" id="emptyState" hidden>
+            <div class="empty-tree" aria-hidden="true">♧</div>
+            <h3>这里还没有枝叶</h3>
+            <p>新建第一个条目，或导入已有的 JSON/YAML 世界书。</p>
+            <button class="button button-primary" id="emptyCreateButton" type="button">新建条目</button>
+          </div>
+          <nav class="pagination" id="pagination" aria-label="条目分页"></nav>
+        </main>
+      </div>
+    </div>
+
+    <aside class="editor-drawer" id="editorDrawer" aria-label="条目编辑器" aria-hidden="true">
+      <div class="drawer-scrim" id="drawerScrim"></div>
+      <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+        <header class="drawer-header">
+          <div>
+            <p class="eyebrow">ENTRY EDITOR</p>
+            <h2 id="editorTitle">新建条目</h2>
+          </div>
+          <button class="icon-button" id="closeEditorButton" type="button" aria-label="关闭编辑器">×</button>
+        </header>
+        <form id="entryForm" novalidate>
+          <div class="form-grid">
+            <label>
+              <span>模板</span>
+              <select id="templateInput" name="template"></select>
+            </label>
+            <label class="toggle-field">
+              <span>全局启用</span>
+              <input id="enabledInput" name="enabled" type="checkbox" checked />
+              <i aria-hidden="true"></i>
+            </label>
+            <label class="wide">
+              <span>名称 <em>必填</em></span>
+              <input id="nameInput" name="name" type="text" maxlength="80" required placeholder="例如：冒险者公会" />
+            </label>
+            <label>
+              <span>文件夹</span>
+              <input id="folderInput" name="folder" type="text" maxlength="80" placeholder="例如：世界观 / 角色" />
+            </label>
+            <label>
+              <span>标签</span>
+              <input id="tagsInput" name="tags" type="text" maxlength="800" placeholder="用逗号分隔，例如：主线, 城市" />
+            </label>
+            <label>
+              <span>优先级</span>
+              <input id="priorityInput" name="priority" type="number" min="-9999" max="9999" step="1" value="50" />
+            </label>
+            <label>
+              <span>生效概率</span>
+              <input id="probabilityInput" name="probability" type="number" min="0" max="1" step="0.01" value="1" />
+            </label>
+            <label>
+              <span>生效时长（秒）</span>
+              <input id="durationInput" name="duration" type="number" min="0" max="31536000" step="1" value="180" />
+            </label>
+            <label>
+              <span>最多注入次数</span>
+              <input id="timesInput" name="times" type="number" min="0" max="1000000" step="1" value="5" />
+            </label>
+            <label class="wide">
+              <span>关键词 / 触发器</span>
+              <textarea id="keywordsInput" name="keywords" rows="3" maxlength="8500" placeholder="每行一个。普通文本按字面量匹配；正则请明确写为 re:&lt;表达式&gt;。"></textarea>
+              <small>留空时仅由 Cron 触发。导入的上游条目会保留原有正则行为。</small>
+            </label>
+            <label>
+              <span>关键词模式</span>
+              <select id="keywordModeInput" name="keyword_mode">
+                <option value="modern">字面量优先（推荐）</option>
+                <option value="legacy_regex">兼容旧世界书：全部按正则</option>
+              </select>
+            </label>
+            <label>
+              <span>Cron（分 时 日 月 周）</span>
+              <input id="cronInput" name="cron" type="text" maxlength="128" placeholder="例如：0 9 * * 1-5" />
+            </label>
+            <label class="wide">
+              <span>适用范围</span>
+              <textarea id="scopeInput" name="scope" rows="2" maxlength="17000" placeholder="每行一个：admin、user:&lt;用户 ID&gt;、group:&lt;群 ID&gt; 或 session:&lt;UMO&gt;。留空代表不限。"></textarea>
+            </label>
+            <label class="wide content-field">
+              <span>注入内容 <em>必填</em></span>
+              <textarea id="contentInput" name="content" rows="12" maxlength="50000" required placeholder="写入要让模型在触发时参考的设定、规则或背景。支持 {user_id}、{user_name}、{user}、{time}、{entry_name}。"></textarea>
+            </label>
+          </div>
+          <p class="form-error" id="formError" role="alert" hidden></p>
+          <footer class="drawer-footer">
+            <button class="button button-danger" id="deleteEntryButton" type="button" hidden>删除此条目</button>
+            <div class="drawer-footer-actions">
+              <button class="button button-ghost" id="cancelEditorButton" type="button">取消</button>
+              <button class="button button-primary" id="saveEntryButton" type="submit">保存条目</button>
+            </div>
+          </footer>
+        </form>
+      </section>
+    </aside>
+
+    <dialog class="import-dialog" id="importDialog" aria-labelledby="importTitle">
+      <form id="importForm" method="dialog">
+        <header>
+          <div>
+            <p class="eyebrow">GRAFT A BOOK</p>
+            <h2 id="importTitle">导入世界书</h2>
+          </div>
+          <button class="icon-button" id="closeImportButton" type="button" aria-label="关闭导入窗口">×</button>
+        </header>
+        <p>支持本插件导出的文件、上游 Worldbook 与常见的 JSON/YAML 世界书。单个文件最大 2 MiB。</p>
+        <label class="file-drop" for="importFileInput">
+          <span aria-hidden="true">⇧</span>
+          <strong>选择 JSON / YAML 文件</strong>
+          <small id="importFileName">尚未选择文件</small>
+          <input id="importFileInput" type="file" accept=".json,.yaml,.yml,application/json,application/x-yaml,text/yaml" />
+        </label>
+        <label>
+          <span>同名条目处理方式</span>
+          <select id="importStrategyInput">
+            <option value="skip">跳过已有条目（安全）</option>
+            <option value="rename">保留两者，自动重命名导入项</option>
+            <option value="replace">用导入内容覆盖已有条目</option>
+          </select>
+        </label>
+        <p class="form-error" id="importError" role="alert" hidden></p>
+        <footer>
+          <button class="button button-ghost" type="button" id="cancelImportButton">取消</button>
+          <button class="button button-primary" type="submit" id="confirmImportButton">导入</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
