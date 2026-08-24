@@ -64,10 +64,17 @@ const refs = {
   closeImport: $("#closeImportButton"),
   cancelImport: $("#cancelImportButton"),
   confirmImport: $("#confirmImportButton"),
+  confirmDialog: $("#confirmDialog"),
+  confirmTitle: $("#confirmTitle"),
+  confirmMessage: $("#confirmMessage"),
+  confirmHint: $("#confirmHint"),
+  cancelConfirm: $("#cancelConfirmButton"),
+  acceptConfirm: $("#acceptConfirmButton"),
   toastRegion: $("#toastRegion"),
 };
 
 let lastFocusedElement = null;
+let confirmationResolver = null;
 
 const state = {
   revision: 0,
@@ -111,6 +118,27 @@ function showToast(message, type = "success") {
 function asErrorMessage(error) {
   if (error instanceof Error) return error.message || "请求失败";
   return String(error || "请求失败");
+}
+
+function settleConfirmation(confirmed) {
+  const resolve = confirmationResolver;
+  confirmationResolver = null;
+  if (refs.confirmDialog.open) refs.confirmDialog.close();
+  if (resolve) resolve(Boolean(confirmed));
+}
+
+function requestConfirmation({ title, message, hint, confirmLabel = "确认" }) {
+  if (confirmationResolver) settleConfirmation(false);
+  refs.confirmTitle.textContent = title;
+  refs.confirmMessage.textContent = message;
+  refs.confirmHint.textContent = hint;
+  refs.acceptConfirm.textContent = confirmLabel;
+
+  return new Promise((resolve) => {
+    confirmationResolver = resolve;
+    refs.confirmDialog.showModal();
+    window.requestAnimationFrame(() => refs.cancelConfirm.focus());
+  });
 }
 
 function updateBusy(button, busy, busyText = "处理中…") {
@@ -518,7 +546,13 @@ async function deleteCurrentEntry() {
   if (!state.editingId) return;
   const entryId = state.editingId;
   const entryName = refs.name.value.trim() || "此条目";
-  if (!window.confirm(`确定删除“${entryName}”吗？此操作无法在管理台内撤销。`)) return;
+  const confirmed = await requestConfirmation({
+    title: "删除此条目？",
+    message: `“${entryName}”将从世界树中永久移除。`,
+    hint: "此操作无法在管理台内撤销；如需保留，请先导出备份。",
+    confirmLabel: "永久删除",
+  });
+  if (!confirmed) return;
   updateBusy(refs.deleteEntry, true, "删除中…");
   try {
     const result = await bridge.apiPost(`entry/${entryId}/delete`, {
@@ -572,7 +606,13 @@ async function applyBulk() {
     showToast("请填写文件夹或标签", "warning");
     return;
   } else if (action === "delete") {
-    if (!window.confirm(`确定要删除所选的 ${ids.length} 个条目吗？此操作无法在管理台内撤销。`)) return;
+    const confirmed = await requestConfirmation({
+      title: `删除 ${ids.length} 个条目？`,
+      message: "所选枝叶将从世界树中永久移除。",
+      hint: "此操作无法在管理台内撤销；如需保留，请先导出备份。",
+      confirmLabel: `删除 ${ids.length} 项`,
+    });
+    if (!confirmed) return;
     value = null;
   }
   updateBusy(refs.bulkApply, true, "应用中…");
@@ -722,6 +762,15 @@ function bindEvents() {
   refs.closeImport.addEventListener("click", closeImportDialog);
   refs.cancelImport.addEventListener("click", closeImportDialog);
   refs.importForm.addEventListener("submit", importEntries);
+  refs.cancelConfirm.addEventListener("click", () => settleConfirmation(false));
+  refs.acceptConfirm.addEventListener("click", () => settleConfirmation(true));
+  refs.confirmDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    settleConfirmation(false);
+  });
+  refs.confirmDialog.addEventListener("click", (event) => {
+    if (event.target === refs.confirmDialog) settleConfirmation(false);
+  });
   refs.importFile.addEventListener("change", () => {
     const file = refs.importFile.files?.[0];
     refs.importFileName.textContent = file ? `${file.name}（${Math.ceil(file.size / 1024)} KiB）` : "尚未选择文件";
@@ -729,6 +778,12 @@ function bindEvents() {
   refs.exportYaml.addEventListener("click", () => exportEntries("yaml", refs.exportYaml));
   refs.exportJson.addEventListener("click", () => exportEntries("json", refs.exportJson));
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && refs.confirmDialog.open) {
+      event.preventDefault();
+      settleConfirmation(false);
+      return;
+    }
+    if (event.key === "Escape" && refs.importDialog.open) return;
     if (event.key === "Escape" && refs.drawer.getAttribute("aria-hidden") === "false") closeEditor();
   });
 }

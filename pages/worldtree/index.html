@@ -240,6 +240,30 @@
       </section>
     </aside>
 
+    <dialog
+      class="confirm-dialog"
+      id="confirmDialog"
+      aria-labelledby="confirmTitle"
+      aria-describedby="confirmMessage confirmHint"
+    >
+      <div class="confirm-dialog-card">
+        <div class="confirm-dialog-accent" aria-hidden="true"></div>
+        <div class="confirm-dialog-body">
+          <div class="confirm-dialog-symbol" aria-hidden="true"><span>!</span></div>
+          <div class="confirm-dialog-copy">
+            <p class="eyebrow">PRUNE BRANCH</p>
+            <h2 id="confirmTitle">确认删除？</h2>
+            <p id="confirmMessage">所选条目将被永久删除。</p>
+            <p class="confirm-dialog-hint" id="confirmHint">此操作无法在管理台内撤销。</p>
+          </div>
+        </div>
+        <footer>
+          <button class="button button-secondary" id="cancelConfirmButton" type="button" autofocus>保留条目</button>
+          <button class="button button-danger" id="acceptConfirmButton" type="button">永久删除</button>
+        </footer>
+      </div>
+    </dialog>
+
     <dialog class="import-dialog" id="importDialog" aria-labelledby="importTitle">
       <form id="importForm" method="dialog">
         <header>
