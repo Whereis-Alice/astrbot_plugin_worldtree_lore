@@ -44,7 +44,7 @@ class WorldTreeLorePlugin(Star):
 
     @filter.command_group("世界树", alias={"世界树书", "worldtree"})
     def worldtree(self):
-        """世界树·世界书命令组。"""
+        """世界树命令组。"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -305,11 +305,12 @@ class WorldTreeLorePlugin(Star):
 
     @worldtree.command("帮助", alias={"help"})
     async def command_help(self, event: AstrMessageEvent):
-        """显示世界树·世界书的简要命令帮助。"""
+        """显示世界树的简要命令帮助。"""
 
         yield event.plain_result(
-            "世界树·世界书\n"
-            "推荐：在 AstrBot 插件详情页打开「世界树管理台」管理、检索和批量编辑条目。\n\n"
+            "世界树\n"
+            "完整字段编辑：在插件详情页打开「世界树管理台」。\n"
+            "聊天命令可用于检索、快速添加、删除、开关和会话控制。\n\n"
             "管理员命令：\n"
             "- 世界树 查找 <关键词>\n"
             "- 世界树 查看 <名称>\n"

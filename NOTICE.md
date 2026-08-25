@@ -1,6 +1,6 @@
 # 致谢与许可说明
 
-`astrbot_plugin_worldtree_lore`（世界树·世界书）参考并重构自
+`astrbot_plugin_worldtree_lore`（世界树）参考并重构自
 [Zhalslar/astrbot_plugin_worldbook](https://github.com/Zhalslar/astrbot_plugin_worldbook)。
 
 感谢上游作者 Zhalslar 对 AstrBot 世界书机制、条目模板、范围控制、Cron

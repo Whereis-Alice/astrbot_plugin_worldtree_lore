@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import unittest
 from pathlib import Path
 
@@ -7,6 +8,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class WebUiContractTests(unittest.TestCase):
+    def test_public_chinese_name_is_worldtree(self) -> None:
+        metadata = (ROOT / "metadata.yaml").read_text(encoding="utf-8")
+        locale = json.loads(
+            (ROOT / ".astrbot-plugin" / "i18n" / "zh-CN.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        self.assertIn("display_name: 世界树\n", metadata)
+        self.assertEqual(locale["metadata"]["display_name"], "世界树")
+        self.assertTrue(readme.startswith("# 世界树\n"))
+        self.assertNotIn("世界树·世界书", metadata + readme)
+
     def test_delete_confirmation_is_safe_inside_astrbot_sandbox(self) -> None:
         script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
         markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(

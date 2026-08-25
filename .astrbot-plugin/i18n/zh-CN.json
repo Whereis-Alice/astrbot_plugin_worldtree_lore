@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "display_name": "世界树·世界书",
+    "display_name": "世界树",
     "desc": "可检索、可批量管理的动态世界书；按关键词、范围或 Cron 条件向当前模型请求注入临时上下文。"
   },
   "pages": {
