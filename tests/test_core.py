@@ -244,6 +244,74 @@ class LibraryTests(unittest.TestCase):
         with self.assertRaises(RevisionConflict):
             self.library.duplicate(source.id, expected_revision=self.library.revision - 1)
 
+    def test_bulk_modernise_keywords_only_touches_legacy_entries(self) -> None:
+        legacy = self.library.create(
+            {
+                "name": "旧常驻",
+                "content": "常驻内容",
+                "keywords": [".*"],
+                "keyword_mode": "legacy_regex",
+            }
+        )
+        modern = self.library.create(
+            {"name": "雾港档案", "content": "海港设定", "keywords": ["雾港"]}
+        )
+        result = self.library.bulk(
+            [legacy.id, modern.id],
+            action="modernise_keywords",
+            expected_revision=self.library.revision,
+        )
+        self.assertEqual(result["changed"], [legacy.id])
+        rewritten = self.library.get(legacy.id)
+        assert rewritten is not None
+        self.assertEqual(rewritten.keyword_mode, "modern")
+        self.assertEqual(rewritten.keywords, ["re:.*"])
+        self.assertTrue(rewritten.matches_text("任何一句话"))
+        untouched = self.library.get(modern.id)
+        assert untouched is not None
+        self.assertEqual(untouched.keywords, ["雾港"])
+
+    def test_stored_legacy_entries_are_folded_onto_one_convention_once(self) -> None:
+        config = FakeConfig(
+            entry_storage=[
+                {
+                    "id": "legacyentry01",
+                    "name": "旧常驻",
+                    "content": "常驻内容",
+                    "keywords": [".*", "re:foo"],
+                    "keyword_mode": "legacy_regex",
+                }
+            ],
+            library_revision=4,
+            data_version=2,
+        )
+        library = WorldTreeLibrary(config)
+        report = library.load()
+        entry = library.list_entries()[0]
+        self.assertEqual(entry.keyword_mode, "modern")
+        self.assertEqual(entry.keywords, ["re:.*", "re:re:foo"])
+        self.assertTrue(entry.matches_text("任何一句话"))
+        self.assertEqual(config["data_version"], 3)
+        self.assertTrue(any("re:" in message for message in report["messages"]))
+
+        # the rewrite is a one-off migration, so a legacy entry chosen on purpose
+        # afterwards must survive the next load untouched
+        config["entry_storage"].append(
+            {
+                "id": "legacyentry02",
+                "name": "手选旧模式",
+                "content": "内容",
+                "keywords": ["a.b"],
+                "keyword_mode": "legacy_regex",
+            }
+        )
+        reloaded = WorldTreeLibrary(config)
+        reloaded.load()
+        kept = reloaded.get("legacyentry02")
+        assert kept is not None
+        self.assertEqual(kept.keyword_mode, "legacy_regex")
+        self.assertEqual(kept.keywords, ["a.b"])
+
     def test_import_rename_strategy_keeps_both_entries(self) -> None:
         self.library.create({"name": "同名", "content": "原内容", "keywords": ["原"]})
         report = self.library.import_entries(
@@ -260,14 +328,14 @@ class LibraryTests(unittest.TestCase):
 
 
 class InterchangeAndSchedulerTests(unittest.TestCase):
-    def test_upstream_template_import_preserves_legacy_regex(self) -> None:
+    def test_upstream_import_rewrites_regex_keywords_without_changing_matches(self) -> None:
         source = {
             "entries": [
                 {
                     "__template_key": "common",
                     "name": "旧世界书",
                     "content": "兼容内容",
-                    "keywords": ["a.b"],
+                    "keywords": ["a.b", "re:foo"],
                 }
             ]
         }
@@ -276,8 +344,30 @@ class InterchangeAndSchedulerTests(unittest.TestCase):
             "upstream.json",
         )
         entry = WorldTreeEntry.from_dict(rows[0])
-        self.assertEqual(entry.keyword_mode, "legacy_regex")
+        self.assertEqual(entry.keyword_mode, "modern")
+        self.assertEqual(entry.keywords, ["re:a.b", "re:re:foo"])
+        # upstream compiled every keyword as a regex, so both must still behave
+        # exactly as they did before the rewrite
         self.assertTrue(entry.matches_text("axb"))
+        self.assertTrue(entry.matches_text("提到 re:foo 的消息"))
+
+    def test_keywords_too_long_to_prefix_stay_on_the_compatibility_mode(self) -> None:
+        source = {
+            "entries": [
+                {
+                    "template": "common",
+                    "name": "超长正则",
+                    "content": "兼容内容",
+                    "keywords": ["x" * 255],
+                }
+            ]
+        }
+        rows = load_entries_from_bytes(
+            json.dumps(source, ensure_ascii=False).encode("utf-8"),
+            "upstream.json",
+        )
+        self.assertEqual(rows[0]["keyword_mode"], "legacy_regex")
+        self.assertEqual(rows[0]["keywords"], ["x" * 255])
 
     def test_common_worldbook_fields_and_round_trip_export(self) -> None:
         source = {

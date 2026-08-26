@@ -11,10 +11,13 @@ from .models import (
     ENTRY_TEMPLATES,
     EntryValidationError,
     WorldTreeEntry,
+    legacy_keywords_to_modern,
     prepared_entry_payload,
 )
 
-DATA_VERSION = 2
+#: Bumped to 3 in v1.4.0, which folds legacy whole-list regex entries onto the
+#: single re:<pattern> convention on first load.
+DATA_VERSION = 3
 MAX_PAGE_SIZE = 100
 DEFAULT_PAGE_SIZE = 30
 MAX_IMPORT_ENTRIES = 2_000
@@ -126,6 +129,13 @@ class WorldTreeLibrary:
         """Load config data defensively so one bad imported row cannot break boot."""
 
         raw_entries = self._config.get("entry_storage", [])
+        stored_version = int(self._config.get("data_version", 0) or 0)
+        # Entries imported before v1.4.0 kept the upstream "every keyword is a
+        # regex" mode. Fold them onto the single re:<pattern> convention exactly
+        # once, so changing an entry's keyword mode later can never silently
+        # turn a bare pattern into a literal string.
+        modernise = stored_version < 3
+        modernised = 0
         repaired = False
         skipped: list[str] = []
         if not isinstance(raw_entries, list):
@@ -140,6 +150,12 @@ class WorldTreeLibrary:
                 repaired = True
                 skipped.append(f"第 {index} 项不是对象，已跳过")
                 continue
+            if modernise and str(raw.get("keyword_mode") or "").strip().lower() == "legacy_regex":
+                converted = legacy_keywords_to_modern(raw.get("keywords"))
+                if converted is not None:
+                    raw = {**raw, "keywords": converted, "keyword_mode": "modern"}
+                    repaired = True
+                    modernised += 1
             try:
                 entry = WorldTreeEntry.from_dict(raw)
             except EntryValidationError as exc:
@@ -161,10 +177,15 @@ class WorldTreeLibrary:
             if entry.to_dict() != raw:
                 repaired = True
 
+        if modernised:
+            skipped.append(
+                f"{modernised} 个旧世界书条目的关键词已改写为 re: 形式，匹配结果不变"
+            )
+
         self._entries = entries
         self._revision = self._read_revision()
         self._loaded = True
-        if repaired or int(self._config.get("data_version", 0) or 0) != DATA_VERSION:
+        if repaired or stored_version != DATA_VERSION:
             self._persist(increment=False)
         return {
             "loaded": len(entries),
@@ -434,6 +455,24 @@ class WorldTreeLibrary:
                     {**entry.to_dict(), "tags": tags, "updated_at": now}
                 )
                 changed.append(entry.id)
+        elif action == "modernise_keywords":
+            # Rewrites legacy whole-list regex entries into re:<pattern> form.
+            # Entries already on the modern convention are left untouched.
+            for entry in selected:
+                if entry.keyword_mode != "legacy_regex":
+                    continue
+                converted = legacy_keywords_to_modern(entry.keywords)
+                if converted is None:
+                    continue
+                self._entries[entry.id] = WorldTreeEntry.from_dict(
+                    {
+                        **entry.to_dict(),
+                        "keywords": converted,
+                        "keyword_mode": "modern",
+                        "updated_at": now,
+                    }
+                )
+                changed.append(entry.id)
         elif action == "delete":
             for entry in selected:
                 self._entries.pop(entry.id, None)
@@ -462,6 +501,7 @@ class WorldTreeLibrary:
             raise EntryValidationError(f"单次最多导入 {MAX_IMPORT_ENTRIES} 个条目")
 
         added = replaced = renamed = skipped = invalid = 0
+        modernised = 0
         messages: list[str] = []
         changed = False
         names = {item.name.casefold() for item in self._entries.values()}
@@ -469,6 +509,8 @@ class WorldTreeLibrary:
             try:
                 if not isinstance(raw, dict):
                     raise EntryValidationError("不是对象")
+                if raw.get("__modernised_keywords"):
+                    modernised += 1
                 data = prepared_entry_payload(raw)
                 data["id"] = ""
                 data.setdefault("created_at", int(time.time()))
@@ -520,6 +562,12 @@ class WorldTreeLibrary:
 
         if changed:
             self._persist()
+        if modernised:
+            # Lead with this note: the per-entry messages below are truncated.
+            messages.insert(
+                0,
+                f"{modernised} 个上游条目的关键词已改写为 re: 形式，匹配结果不变",
+            )
         return ImportReport(added, replaced, renamed, skipped, invalid, messages[:30])
 
     def mark_cron_fired(self, entry_id: str) -> bool:

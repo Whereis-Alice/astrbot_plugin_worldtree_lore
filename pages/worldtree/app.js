@@ -61,6 +61,8 @@ const refs = {
   keywords: $("#keywordsInput"),
   keywordMode: $("#keywordModeInput"),
   keywordWarning: $("#keywordWarning"),
+  keywordLegacyHint: $("#keywordLegacyHint"),
+  modernKeywords: $("#modernKeywordsButton"),
   templateHint: $("#templateHint"),
   triggerNote: $("#triggerNote"),
   applyTemplateDefaults: $("#applyTemplateDefaultsButton"),
@@ -558,6 +560,12 @@ function cardFor(entry) {
   meta.append(badge(`优先级 ${entry.priority}`, "trigger-pill"));
   const keywordCount = (entry.keywords || []).length;
   if (keywordCount) meta.append(badge(`${keywordCount} 个关键词`, "trigger-pill"));
+  // Surfaced so an imported library can be audited without opening every entry.
+  if (entry.keyword_mode === "legacy_regex") {
+    const pill = badge("旧世界书正则", "legacy-pill");
+    pill.title = "此条目的每个关键词都按正则处理，可在编辑器里改写为 re: 形式";
+    meta.append(pill);
+  }
   if (entry.cron) meta.append(badge(`Cron ${entry.cron}`, "trigger-pill"));
   if (typeof entry.probability === "number" && entry.probability < 1) {
     meta.append(badge(`概率 ${Math.round(entry.probability * 100)}%`, "trigger-pill"));
@@ -1010,6 +1018,9 @@ function updateEditorGuidance() {
 // which quietly turns "match everything" into "match a literal asterisk".
 function updateKeywordWarning() {
   const legacy = refs.keywordMode.value === "legacy_regex";
+  // Legacy entries are the only place bare patterns still work, so say so and
+  // offer the one-click rewrite that makes the entry mode-independent.
+  refs.keywordLegacyHint.hidden = !legacy;
   const suspicious = legacy
     ? []
     : refs.keywords.value
@@ -1020,6 +1031,30 @@ function updateKeywordWarning() {
   refs.keywordWarning.textContent = suspicious.length
     ? `「${suspicious[0]}」在字面量优先模式下只会匹配这几个字符本身。想命中任意消息请写成 re:.*，或把关键词模式切到「兼容旧世界书」。`
     : "";
+}
+
+// Prefixing every line with re: makes a legacy entry match exactly the same
+// text under the modern mode, so the two conventions never have to coexist.
+async function modernisePendingKeywords() {
+  if (refs.keywordMode.value !== "legacy_regex") return;
+  const lines = refs.keywords.value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const confirmed = await requestConfirmation({
+    title: "改写为 re: 形式",
+    message: lines.length
+      ? `将把 ${lines.length} 行关键词逐行加上 re: 前缀，并切换到字面量优先模式。`
+      : "将把此条目切换到字面量优先模式。",
+    hint: "匹配结果完全不变，之后再改关键词模式也不会让正则失效。改动在你保存后生效。",
+    confirmLabel: "改写关键词",
+    tone: "graft",
+  });
+  if (!confirmed) return;
+  refs.keywords.value = lines.map((line) => `re:${line}`).join("\n");
+  refs.keywordMode.value = "modern";
+  updateKeywordWarning();
+  showToast("已改写为 re: 形式，记得保存", "success");
 }
 
 function formPayload() {
@@ -1183,6 +1218,8 @@ async function applyBulk() {
   } else if (VALUE_ACTIONS.includes(action) && !value) {
     showToast("请填写文件夹或标签", "warning");
     return;
+  } else if (action === "modernise_keywords") {
+    value = null;
   } else if (action === "delete") {
     const confirmed = await requestConfirmation({
       title: `删除 ${ids.length} 个条目？`,
@@ -1204,7 +1241,16 @@ async function applyBulk() {
     state.revision = result.revision;
     state.selected.clear();
     refs.bulkValue.value = "";
-    showToast(`已更新 ${result.changed.length} 个条目`);
+    if (action === "modernise_keywords") {
+      showToast(
+        result.changed.length
+          ? `已改写 ${result.changed.length} 个旧世界书条目的关键词`
+          : "所选条目都已在新模式下，无需改写",
+        result.changed.length ? "success" : "warning",
+      );
+    } else {
+      showToast(`已更新 ${result.changed.length} 个条目`);
+    }
     await loadEntries();
   } catch (error) {
     const message = asErrorMessage(error);
@@ -1374,6 +1420,7 @@ function bindEvents() {
   refs.applyTemplateDefaults.addEventListener("click", applyTemplateDefaultsFromButton);
   refs.keywords.addEventListener("input", updateKeywordWarning);
   refs.keywordMode.addEventListener("change", updateKeywordWarning);
+  refs.modernKeywords.addEventListener("click", modernisePendingKeywords);
   refs.importButton.addEventListener("click", openImportDialog);
   refs.closeImport.addEventListener("click", closeImportDialog);
   refs.cancelImport.addEventListener("click", closeImportDialog);

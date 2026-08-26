@@ -283,6 +283,36 @@ def _normalise_keyword_mode(value: Any) -> str:
     return mode
 
 
+def legacy_keywords_to_modern(keywords: Any) -> list[str] | None:
+    """Rewrite whole-list regex keywords into the explicit ``re:`` form.
+
+    ``legacy_regex`` is the upstream convention where every keyword is a regex.
+    The same entry behaves identically under ``modern`` matching once each
+    pattern carries an ``re:`` prefix, so both conventions can be collapsed into
+    one without changing what any entry matches. The prefix is added
+    unconditionally: a legacy keyword that already reads ``re:foo`` is a regex
+    matching the literal text ``re:foo``, so it becomes ``re:re:foo``.
+
+    Returns ``None`` when the rewrite cannot be done losslessly, letting callers
+    keep such an entry on the legacy mode instead of corrupting it.
+    """
+
+    if not isinstance(keywords, list):
+        return None
+    result: list[str] = []
+    for raw in keywords:
+        if not isinstance(raw, str):
+            return None
+        keyword = raw.strip()
+        if not keyword:
+            continue
+        rewritten = f"re:{keyword}"
+        if len(rewritten) > MAX_KEYWORD_LENGTH:
+            return None
+        result.append(rewritten)
+    return result
+
+
 def _compile_regex(source: str, *, name: str) -> re.Pattern[str]:
     try:
         return re.compile(source, re.IGNORECASE)

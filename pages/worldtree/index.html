@@ -238,6 +238,7 @@
                 <option value="set_folder">移动到文件夹</option>
                 <option value="add_tag">添加标签</option>
                 <option value="remove_tag">移除标签</option>
+                <option value="modernise_keywords">关键词转为新模式</option>
                 <option value="delete">删除所选条目</option>
               </select>
               <input id="bulkValue" type="text" maxlength="80" placeholder="文件夹或标签" />
@@ -332,7 +333,7 @@
                 <label class="wide">
                   <span>关键词 / 触发器</span>
                   <textarea id="keywordsInput" name="keywords" rows="3" maxlength="8500" placeholder="每行一个。普通文本按字面量匹配；正则请明确写为 re:&lt;表达式&gt;。"></textarea>
-                  <small>留空时仅由 Cron 触发。导入的上游条目会保留原有正则行为。</small>
+                  <small>留空时仅由 Cron 触发。从上游导入的条目会自动改写成 re: 形式，匹配结果不变。</small>
                   <small class="field-warning" id="keywordWarning" hidden></small>
                 </label>
                 <label>
@@ -347,6 +348,10 @@
                   <input id="probabilityInput" name="probability" type="number" min="0" max="1" step="0.01" value="1" />
                   <small>1 表示每次命中都注入。</small>
                 </label>
+                <div class="legacy-hint wide" id="keywordLegacyHint" hidden>
+                  <p id="keywordModeNote">此条目沿用旧世界书模式，上面每一行都按正则处理；把模式切回「字面量优先」会让这些正则变成普通文字。</p>
+                  <button class="text-button" id="modernKeywordsButton" type="button">改写为 re: 形式</button>
+                </div>
                 <label class="wide">
                   <span>Cron（分 时 日 月 周）</span>
                   <input id="cronInput" name="cron" type="text" maxlength="128" placeholder="例如：0 9 * * 1-5" />

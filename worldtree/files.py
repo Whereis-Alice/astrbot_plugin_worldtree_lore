@@ -8,7 +8,7 @@ from typing import Any
 
 import yaml
 
-from .models import EntryValidationError, WorldTreeEntry
+from .models import EntryValidationError, WorldTreeEntry, legacy_keywords_to_modern
 
 MAX_IMPORT_BYTES = 2 * 1024 * 1024
 
@@ -100,11 +100,20 @@ def _normalise_source_item(item: Any, index: int) -> dict[str, Any]:
     result.setdefault("enabled", True)
     result.setdefault("content", "")
 
-    # Upstream Worldbook treats every keyword as a regex. Preserve that only
-    # for its recognisable template-bearing records; new WorldTree entries use
-    # safe literal matching unless users explicitly write re:<pattern>.
+    # Upstream Worldbook treats every keyword as a regex, and its exports always
+    # carry a template field, so a template-bearing record without an explicit
+    # keyword_mode came from that world. Rewriting those patterns to re:<pattern>
+    # keeps them matching exactly what they used to while leaving this library on
+    # a single convention. Records that cannot be rewritten losslessly stay on
+    # the compatibility mode instead.
     if "keyword_mode" not in result and (
         "template" in result or "__template_key" in result
     ):
-        result["keyword_mode"] = "legacy_regex"
+        modernised = legacy_keywords_to_modern(result.get("keywords"))
+        if modernised is None:
+            result["keyword_mode"] = "legacy_regex"
+        else:
+            result["keywords"] = modernised
+            result["keyword_mode"] = "modern"
+            result["__modernised_keywords"] = True
     return result

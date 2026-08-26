@@ -182,6 +182,28 @@ class WebUiContractTests(unittest.TestCase):
         self.assertIn("refs.cancelConfirm.textContent = cancelLabel", script)
         self.assertIn('.confirm-dialog[data-tone="graft"] {', styles)
 
+    def test_legacy_regex_entries_are_visible_and_convertible(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        # Two keyword conventions in one library is a trap: switching an entry's
+        # mode can silently turn a regex into a literal. Legacy entries are
+        # therefore labelled on the card and convertible one by one or in bulk.
+        self.assertIn('id="keywordLegacyHint"', markup)
+        self.assertIn('id="keywordModeNote"', markup)
+        self.assertIn('id="modernKeywordsButton"', markup)
+        self.assertIn("refs.keywordLegacyHint.hidden = !legacy", script)
+        self.assertIn('value="modernise_keywords"', markup)
+        self.assertIn("async function modernisePendingKeywords()", script)
+        self.assertIn('badge("旧世界书正则", "legacy-pill")', script)
+        self.assertIn(".legacy-pill {", styles)
+        self.assertIn(".legacy-hint {", styles)
+
     def test_dark_overrides_also_cover_the_nightglow_theme(self) -> None:
         styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
             encoding="utf-8"

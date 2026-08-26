@@ -1186,6 +1186,7 @@ textarea {
 .folder-pill,
 .trigger-pill,
 .template-pill,
+.legacy-pill,
 .meta-note {
   display: inline-flex;
   align-items: center;
@@ -1209,6 +1210,13 @@ textarea {
 .folder-pill { color: var(--forest-800); background: var(--moss); }
 .trigger-pill { color: var(--muted); background: color-mix(in srgb, var(--moss) 56%, transparent); }
 .tag { color: var(--forest-700); background: color-mix(in srgb, var(--forest-300) 36%, var(--paper)); }
+
+/* --warning is redefined per theme, so this pill needs no dark overrides */
+.legacy-pill {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 32%, transparent);
+}
 
 .meta-note {
   padding: 2px 2px;
@@ -1558,6 +1566,61 @@ textarea {
   background: color-mix(in srgb, var(--warning) 13%, transparent);
   color: color-mix(in srgb, var(--warning) 68%, var(--ink));
   line-height: 1.6;
+}
+
+/* Entries carried over from the old lorebook read every keyword as a regex.
+   The callout says so and offers the lossless rewrite, so the mode select is
+   never the only thing standing between a working entry and a silent miss.
+   --warning is redefined per theme, so no dark override is needed here. */
+.legacy-hint {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+  padding: 9px 13px;
+  border-left: 2px solid var(--warning);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+
+.legacy-hint p {
+  flex: 1 1 260px;
+  margin: 0;
+  color: color-mix(in srgb, var(--warning) 66%, var(--ink));
+  font-size: .72rem;
+  line-height: 1.6;
+}
+
+.legacy-hint .text-button {
+  flex: 0 0 auto;
+  padding: 5px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, transparent);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--warning) 76%, var(--ink));
+  background: var(--paper);
+  font-size: .74rem;
+}
+
+.legacy-hint .text-button:hover {
+  background: color-mix(in srgb, var(--warning) 16%, var(--paper));
+  text-decoration: none;
+}
+
+/* the dark palettes use a much lighter amber, so the same wash reads far
+   brighter there; keep the band quiet and let the text carry the accent */
+:is([data-theme="dark"], [data-theme="nightglow"]) .legacy-hint {
+  background: color-mix(in srgb, var(--warning) 9%, transparent);
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .legacy-hint p,
+:is([data-theme="dark"], [data-theme="nightglow"]) .legacy-hint .text-button {
+  color: var(--warning);
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .legacy-hint .text-button {
+  background: color-mix(in srgb, var(--paper) 70%, transparent);
 }
 
 .toggle-field {

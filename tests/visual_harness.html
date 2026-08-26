@@ -50,7 +50,7 @@
           {id: "root-5", name: "钟楼守夜人", content: "钟楼守夜人叫阿澪，沉默但记得每一位来客的脚步声。被问及往事时他只会敲一次钟。", enabled: true, priority: 45, keywords: ["守夜人", "阿澪", "钟楼"], keyword_mode: "modern", scope: [], cron: "", duration: 240, times: 4, probability: 1, folder: "人物", tags: ["NPC", "主线"], template: "common", updated_at: NOW - 40 * DAY},
           {id: "root-6", name: "工会群规", content: "在该群内回应时使用简体中文、避免玩梗，并在结尾附一句当日安全提示。", enabled: true, priority: 65, keywords: [], keyword_mode: "modern", scope: ["group:906123"], cron: "", duration: 180, times: 5, probability: 1, folder: "群设置", tags: ["规范"], template: "group", updated_at: NOW - 20 * HOUR},
           {id: "root-7", name: "阿澪的私聊语气", content: "与该用户私聊时称呼对方为「旅人」，语速放慢，多用短句。", enabled: true, priority: 62, keywords: [], keyword_mode: "modern", scope: ["user:10086"], cron: "", duration: 180, times: 5, probability: 1, folder: "", tags: ["语气"], template: "user", updated_at: NOW - 5 * DAY},
-          {id: "root-8", name: "潮汐历法", content: "一年分为四次大潮，分别称初汐、盛汐、残汐与静汐；静汐期间港口封闭。", enabled: true, priority: 20, keywords: ["历法", "潮汐", "季节"], keyword_mode: "legacy", scope: [], cron: "", duration: 0, times: 0, probability: 1, folder: "世界观", tags: ["设定"], template: "resident", updated_at: NOW - 12 * DAY},
+          {id: "root-8", name: "潮汐历法", content: "一年分为四次大潮，分别称初汐、盛汐、残汐与静汐；静汐期间港口封闭。", enabled: true, priority: 20, keywords: ["历法", "潮汐", "季节"], keyword_mode: "legacy_regex", scope: [], cron: "", duration: 0, times: 0, probability: 1, folder: "世界观", tags: ["设定"], template: "resident", updated_at: NOW - 12 * DAY},
           {id: "root-9", name: "深夜雾笛", content: "深夜时段偶尔响起三短一长的雾笛，这是引路船靠岸的信号。", enabled: false, priority: 90, keywords: [], keyword_mode: "modern", scope: [], cron: "30 2 * * *", duration: 1800, times: 1, probability: 1, folder: "日程", tags: ["氛围"], template: "schedule", updated_at: NOW - 70 * DAY},
           {id: "root-10", name: "盐渍面包摊", content: "集市东侧有一家盐渍面包摊，老板娘会用面包边跟人换街头消息。", enabled: true, priority: 120, keywords: ["面包", "集市"], keyword_mode: "modern", scope: [], cron: "", duration: 180, times: 3, probability: 0.4, folder: "地点", tags: ["日常", "随机"], template: "chance", updated_at: NOW - 30 * 60}
         ];
@@ -294,6 +294,18 @@
         await import(moduleUrl);
       } finally {
         URL.revokeObjectURL(moduleUrl);
+      }
+
+      // ?select=<n> ticks the first n entry checkboxes so the bulk action bar
+      // (and any newly added bulk option) can be reviewed in a screenshot.
+      const selectParam = Number(new URLSearchParams(location.search).get("select") || 0);
+      if (selectParam > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const boxes = [...document.querySelectorAll(".entry-card .entry-select")].slice(0, selectParam);
+        for (const box of boxes) {
+          box.checked = true;
+          box.dispatchEvent(new Event("change", {bubbles: true}));
+        }
       }
 
       // ?editor=<template key> opens a fresh entry with that preset selected and
