@@ -108,6 +108,45 @@ class WebUiContractTests(unittest.TestCase):
         self.assertIn(".tree-trunk", styles)
         self.assertIn(".branch-body", styles)
 
+    def test_theme_choice_is_independent_of_astrbot(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        # The host theme is only a fallback: "auto" follows AstrBot, the other
+        # three modes are stored locally and win over whatever the host reports.
+        self.assertIn('id="themeSwitch"', markup)
+        for mode in ("auto", "light", "dark", "nightglow"):
+            self.assertIn(f'data-theme-mode="{mode}"', markup)
+        self.assertIn('readPref("theme", "auto")', script)
+        self.assertIn('writePref("theme", mode)', script)
+        self.assertIn("state.hostIsDark", script)
+        self.assertIn("function applyTheme()", script)
+
+        # A theme picked on a previous visit must be on the root element before
+        # the first paint, otherwise dark users get a white flash.
+        self.assertIn('localStorage.getItem("worldtree.theme")', markup)
+
+        self.assertIn('[data-theme="nightglow"] {', styles)
+        self.assertIn(".theme-switch {", styles)
+        self.assertIn("@keyframes glimmer", styles)
+
+    def test_dark_overrides_also_cover_the_nightglow_theme(self) -> None:
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        # Nightglow reuses the dark palette semantics, so every dark descendant
+        # rule is written as :is(dark, nightglow). Only the two variable blocks
+        # may target a single theme on their own.
+        shared = styles.count(':is([data-theme="dark"], [data-theme="nightglow"])')
+        self.assertGreater(shared, 40)
+        self.assertEqual(styles.count('[data-theme="dark"]'), shared + 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4,7 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>WorldTree Lore visual harness</title>
-    <link rel="stylesheet" href="../pages/worldtree/style.css" />
+    <script>
+      /* Dev harness only: always pull the stylesheet fresh so a browser cache
+         can never hide a CSS edit that is being reviewed right now. */
+      const devStyle = document.createElement("link");
+      devStyle.rel = "stylesheet";
+      devStyle.href = "../pages/worldtree/style.css?t=" + Date.now();
+      document.head.append(devStyle);
+    </script>
   </head>
   <body>
     <script>
@@ -160,8 +167,23 @@
 
         const visualParams = new URLSearchParams(window.location.search);
 
+        /* "?theme=" drives the stored preference so light / dark / nightglow are
+           all reachable, and "?theme=auto" exercises the AstrBot-follow path. */
+        const visualTheme = visualParams.get("theme") || "";
+        try {
+          if (visualTheme === "auto") {
+            window.localStorage.removeItem("worldtree.theme");
+          } else if (visualTheme) {
+            window.localStorage.setItem("worldtree.theme", visualTheme);
+          }
+          /* Without "?theme=" the stored preference is left untouched, so a
+             reload can verify that the choice really survives a page load. */
+        } catch {
+          /* storage is optional in this harness */
+        }
+
         window.AstrBotPluginPage = {
-          ready: async () => ({locale: "zh-CN", isDark: visualParams.get("theme") === "dark"}),
+          ready: async () => ({locale: "zh-CN", isDark: visualTheme === "dark"}),
           getLocale: () => "zh-CN",
           t: (_key, fallback) => fallback,
           onContext: () => () => {},
@@ -243,7 +265,8 @@
       })();
     </script>
     <script type="module">
-      const response = await fetch("../pages/worldtree/index.html");
+      const devBust = "?t=" + Date.now();
+      const response = await fetch("../pages/worldtree/index.html" + devBust);
       if (!response.ok) {
         throw new Error(`无法加载页面模板：HTTP ${response.status}`);
       }
@@ -260,11 +283,22 @@
       // which browsers correctly reject for module imports. Loading through a
       // typed Blob keeps this visual-only harness independent of server MIME
       // configuration while executing the exact production source.
-      const scriptResponse = await fetch("../pages/worldtree/app.js");
+      const scriptResponse = await fetch("../pages/worldtree/app.js" + devBust);
       if (!scriptResponse.ok) {
         throw new Error(`无法加载页面脚本：HTTP ${scriptResponse.status}`);
       }
       const moduleUrl = URL.createObjectURL(
+        new Blob([await scriptResponse.text()], {type: "text/javascript"}),
+      );
+      try {
+        await import(moduleUrl);
+      } finally {
+        URL.revokeObjectURL(moduleUrl);
+      }
+    </script>
+  </body>
+</html>
+uleUrl = URL.createObjectURL(
         new Blob([await scriptResponse.text()], {type: "text/javascript"}),
       );
       try {

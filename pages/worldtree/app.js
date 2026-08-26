@@ -7,6 +7,7 @@ const refs = {
   mobileFilterToggle: $("#mobileFilterToggle"),
   mobileFilterState: $("#mobileFilterState"),
   connection: $("#connectionState"),
+  themeSwitch: $("#themeSwitch"),
   refresh: $("#refreshButton"),
   newEntry: $("#newEntryButton"),
   emptyCreate: $("#emptyCreateButton"),
@@ -81,6 +82,10 @@ const refs = {
 };
 
 const PREF_PREFIX = "worldtree.";
+
+/* "auto" mirrors the AstrBot WebUI; the other three are set here and remembered
+   locally, so the console can stay dark while AstrBot itself is light. */
+const THEME_MODES = ["auto", "light", "dark", "nightglow"];
 const DEFAULT_SORT = "priority";
 const DEFAULT_PAGE_SIZE = 30;
 
@@ -139,6 +144,8 @@ const state = {
   loading: false,
   loadSequence: 0,
   density: "cosy",
+  themeMode: "auto",
+  hostIsDark: false,
   filters: {
     q: "",
     status: "all",
@@ -1204,6 +1211,10 @@ function bindEvents() {
   refs.emptyCreate.addEventListener("click", newEntry);
   refs.selectPage.addEventListener("click", toggleCurrentPageSelection);
   refs.density.addEventListener("click", toggleDensity);
+  refs.themeSwitch.addEventListener("click", (event) => {
+    const option = event.target.closest(".theme-option");
+    if (option) setThemeMode(option.dataset.themeMode);
+  });
   refs.collapseAll.addEventListener("click", toggleAllBranches);
   refs.mobileFilterToggle.addEventListener("click", toggleMobileFilters);
   refs.clearFilters.addEventListener("click", () => {
@@ -1330,17 +1341,32 @@ function bindEvents() {
 
 /* ------------------------------------------------------------------- boot */
 
+function applyTheme() {
+  const mode = THEME_MODES.includes(state.themeMode) ? state.themeMode : "auto";
+  const resolved = mode === "auto" ? (state.hostIsDark ? "dark" : "light") : mode;
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.themeMode = mode;
+  for (const option of refs.themeSwitch.querySelectorAll(".theme-option")) {
+    option.setAttribute("aria-pressed", String(option.dataset.themeMode === mode));
+  }
+}
+
+function setThemeMode(mode) {
+  if (!THEME_MODES.includes(mode) || mode === state.themeMode) return;
+  state.themeMode = mode;
+  writePref("theme", mode);
+  applyTheme();
+}
+
 function applyPageContext(context = {}) {
   const current = context?.isDark === undefined && context?.theme === undefined
     ? (bridge.getContext?.() || context || {})
     : context;
   document.documentElement.lang = bridge.getLocale?.() || current.locale || "zh-CN";
   if (typeof current.isDark === "boolean" || current.theme) {
-    const isDark = current.isDark === true || current.theme === "dark";
-    document.documentElement.dataset.theme = isDark ? "dark" : "light";
-  } else if (!document.documentElement.dataset.theme) {
-    document.documentElement.dataset.theme = "light";
+    state.hostIsDark = current.isDark === true || current.theme === "dark";
   }
+  applyTheme();
 }
 
 function restorePreferences() {
@@ -1356,6 +1382,9 @@ function restorePreferences() {
   }
   state.density = readPref("density", "cosy") === "compact" ? "compact" : "cosy";
   applyDensity();
+  const themeMode = readPref("theme", "auto");
+  state.themeMode = THEME_MODES.includes(themeMode) ? themeMode : "auto";
+  applyTheme();
 }
 
 async function initialise() {

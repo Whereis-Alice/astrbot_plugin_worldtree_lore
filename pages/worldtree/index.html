@@ -9,6 +9,21 @@
     />
     <title>世界树管理台</title>
     <link rel="stylesheet" href="./style.css" />
+    <script>
+      /* Paint the stored theme before first layout so switching to a night
+         theme never flashes the light palette. app.js re-applies it later. */
+      (() => {
+        try {
+          const stored = window.localStorage.getItem("worldtree.theme");
+          if (stored === "light" || stored === "dark" || stored === "nightglow") {
+            document.documentElement.dataset.theme = stored;
+            document.documentElement.dataset.themeMode = stored;
+          }
+        } catch {
+          /* storage may be blocked; the default light palette is fine. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div class="sky" aria-hidden="true">
@@ -39,6 +54,17 @@
       <span class="mote mote-a"></span>
       <span class="mote mote-b"></span>
       <span class="mote mote-c"></span>
+      <div class="fireflies">
+        <span class="firefly firefly-1"></span>
+        <span class="firefly firefly-2"></span>
+        <span class="firefly firefly-3"></span>
+        <span class="firefly firefly-4"></span>
+        <span class="firefly firefly-5"></span>
+        <span class="firefly firefly-6"></span>
+        <span class="firefly firefly-7"></span>
+        <span class="firefly firefly-8"></span>
+        <span class="firefly firefly-9"></span>
+      </div>
     </div>
     <div class="app-shell" id="appShell" data-density="cosy">
       <header class="topbar">
@@ -60,6 +86,20 @@
         </div>
         <div class="top-actions">
           <span class="connection" id="connectionState" aria-live="polite">正在连接</span>
+          <div class="theme-switch" id="themeSwitch" role="group" aria-label="界面主题">
+            <button class="theme-option" type="button" data-theme-mode="auto" aria-label="跟随 AstrBot 主题" title="跟随 AstrBot 主题">
+              <span aria-hidden="true">◐</span>
+            </button>
+            <button class="theme-option" type="button" data-theme-mode="light" aria-label="白昼主题" title="白昼：明亮的林间日光">
+              <span aria-hidden="true">☀</span>
+            </button>
+            <button class="theme-option" type="button" data-theme-mode="dark" aria-label="暗林主题" title="暗林：低照度的深绿夜色">
+              <span aria-hidden="true">☾</span>
+            </button>
+            <button class="theme-option" type="button" data-theme-mode="nightglow" aria-label="荧夜主题" title="荧夜：世界树在夜里发出荧光">
+              <span aria-hidden="true">✦</span>
+            </button>
+          </div>
           <button class="button button-ghost" id="refreshButton" type="button" title="重新读取条目">
             <span aria-hidden="true">↻</span> 刷新
           </button>

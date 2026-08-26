@@ -51,6 +51,30 @@
   --shadow: 0 18px 55px rgb(0 0 0 / 30%);
 }
 
+/* The same world tree after dusk: a midnight canopy whose leaves fluoresce.
+   The ramp keeps the light-theme roles (950-800 surfaces, 500-300 accents) so
+   every dark-theme override above applies unchanged. */
+[data-theme="nightglow"] {
+  color-scheme: dark;
+  --forest-950: #01060c;
+  --forest-900: #05121d;
+  --forest-800: #0a2131;
+  --forest-700: #157a6e;
+  --forest-600: #1c9c86;
+  --forest-500: #2fd2a4;
+  --forest-400: #74f3cd;
+  --forest-300: #cafff2;
+  --moss: #0f2739;
+  --paper: #050b14;
+  --paper-strong: #0b1626;
+  --ink: #e9fdf7;
+  --muted: #8fb0b9;
+  --line: #1b3a52;
+  --danger: #ff93a2;
+  --warning: #ffd489;
+  --shadow: 0 20px 60px rgb(0 0 0 / 55%);
+}
+
 /* --- entry template accents -------------------------------------------- */
 
 /* light accents are tuned so the small template pill text still clears
@@ -62,12 +86,12 @@
 [data-template="group"] { --tpl: #486c24; }
 [data-template="user"] { --tpl: #3e6a89; }
 
-[data-theme="dark"] [data-template="common"] { --tpl: #6ec38f; }
-[data-theme="dark"] [data-template="resident"] { --tpl: #4fb886; }
-[data-theme="dark"] [data-template="chance"] { --tpl: #d9a674; }
-[data-theme="dark"] [data-template="schedule"] { --tpl: #6fc7c7; }
-[data-theme="dark"] [data-template="group"] { --tpl: #a2c96b; }
-[data-theme="dark"] [data-template="user"] { --tpl: #86b6d6; }
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="common"] { --tpl: #6ec38f; }
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="resident"] { --tpl: #4fb886; }
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="chance"] { --tpl: #d9a674; }
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="schedule"] { --tpl: #6fc7c7; }
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="group"] { --tpl: #a2c96b; }
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="user"] { --tpl: #86b6d6; }
 
 /* --- base -------------------------------------------------------------- */
 
@@ -127,18 +151,28 @@ kbd {
     linear-gradient(180deg, rgb(223 241 224 / .58), rgb(223 241 224 / 0) 46%);
 }
 
+/* the tree is meant to fill the viewport: the crown runs off the top edge and
+   the root system off both sides, so the page really does sit inside it */
 .sky-tree {
   position: absolute;
   left: 50%;
-  bottom: -7vh;
+  bottom: -9vh;
   translate: -50% 0;
-  width: min(1560px, 126vmax);
+  width: max(1180px, 116vw, 104vh);
   height: auto;
-  max-height: 122vh;
-  opacity: .1;
+  opacity: .13;
   transform-origin: 50% 96%;
   will-change: transform;
   animation: sway 34s ease-in-out infinite;
+}
+
+/* on phones a 1180px tree would only show two fat branches, so pull the scale
+   back until the silhouette reads as a whole tree again */
+@media (max-width: 720px) {
+  .sky-tree {
+    bottom: -6vh;
+    width: max(860px, 132vw);
+  }
 }
 
 .sky-crown { fill: url(#skyCrown); }
@@ -194,7 +228,7 @@ kbd {
 .mote-b { top: 52%; right: 8%; width: 140px; height: 140px; animation-duration: 31s; animation-delay: -7s; }
 .mote-c { bottom: 10%; left: 36%; width: 96px; height: 96px; animation-duration: 37s; animation-delay: -15s; }
 
-[data-theme="dark"] .sky {
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky {
   background:
     radial-gradient(128% 62% at 50% -10%, rgb(69 151 96 / .26) 0 34%, transparent 72%),
     radial-gradient(circle at 4% 2%, rgb(37 117 74 / .22) 0 22%, transparent 48%),
@@ -203,15 +237,85 @@ kbd {
     linear-gradient(180deg, rgb(22 61 39 / .46), rgb(22 61 39 / 0) 48%);
 }
 
-[data-theme="dark"] .sky-tree { opacity: .34; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-tree { opacity: .34; }
 
-[data-theme="dark"] .sky-limb,
-[data-theme="dark"] .sky-root { stroke: var(--forest-700); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-limb,
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-root { stroke: var(--forest-700); }
 
-[data-theme="dark"] #skyCrown .stop-core { stop-opacity: .34; }
-[data-theme="dark"] #skyCrown .stop-mid { stop-opacity: .2; }
+:is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-core { stop-opacity: .34; }
+:is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-mid { stop-opacity: .2; }
 
-[data-theme="dark"] .mote { background: radial-gradient(circle, rgb(72 170 112 / .38), transparent 70%); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .mote { background: radial-gradient(circle, rgb(72 170 112 / .38), transparent 70%); }
+
+/* --- nightglow: the tree lit from the inside ---------------------------- */
+
+[data-theme="nightglow"] .sky {
+  background:
+    radial-gradient(120% 58% at 50% -6%, rgb(47 210 164 / .20) 0 30%, transparent 68%),
+    radial-gradient(circle at 8% 6%, rgb(56 130 214 / .18) 0 24%, transparent 52%),
+    radial-gradient(circle at 92% 2%, rgb(120 90 220 / .16) 0 22%, transparent 50%),
+    radial-gradient(140% 46% at 50% 108%, rgb(4 32 40 / .62) 0 36%, transparent 74%),
+    linear-gradient(180deg, #071726, #050b14 58%);
+}
+
+[data-theme="nightglow"] .sky-tree {
+  opacity: .5;
+  filter: drop-shadow(0 0 26px rgb(47 210 164 / .28));
+}
+
+/* the trunk stays a silhouette so the fluorescing leaves read as the light */
+[data-theme="nightglow"] .sky-limb,
+[data-theme="nightglow"] .sky-root { stroke: #0a2231; }
+
+[data-theme="nightglow"] .sky-root { opacity: .62; }
+
+[data-theme="nightglow"] #skyCrown .stop-core { stop-color: var(--forest-500); stop-opacity: .3; }
+[data-theme="nightglow"] #skyCrown .stop-mid { stop-color: var(--forest-600); stop-opacity: .17; }
+[data-theme="nightglow"] #skyLeaf .stop-core { stop-color: var(--forest-300); stop-opacity: .95; }
+[data-theme="nightglow"] #skyLeaf .stop-mid { stop-color: var(--forest-500); stop-opacity: .5; }
+
+[data-theme="nightglow"] .sky-mist {
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0),
+    color-mix(in srgb, var(--paper) 60%, transparent) 44%,
+    var(--paper)
+  );
+}
+
+[data-theme="nightglow"] .mote { background: radial-gradient(circle, rgb(47 210 164 / .3), transparent 70%); }
+
+/* spores drifting out of the canopy; only the night theme shows them */
+.fireflies { display: none; }
+[data-theme="nightglow"] .fireflies { display: block; }
+
+.firefly {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--forest-300);
+  box-shadow: 0 0 8px 2px rgb(116 243 205 / .55);
+  opacity: 0;
+  animation: glimmer 9s ease-in-out infinite;
+}
+
+.firefly-1 { top: 22%; left: 14%; animation-duration: 8s; animation-delay: -1s; }
+.firefly-2 { top: 34%; left: 27%; animation-duration: 11s; animation-delay: -5s; }
+.firefly-3 { top: 16%; left: 41%; animation-duration: 9.5s; animation-delay: -8s; }
+.firefly-4 { top: 44%; left: 55%; animation-duration: 12s; animation-delay: -3s; }
+.firefly-5 { top: 26%; left: 68%; animation-duration: 8.5s; animation-delay: -6s; }
+.firefly-6 { top: 12%; left: 82%; animation-duration: 10.5s; animation-delay: -2s; }
+.firefly-7 { top: 58%; left: 9%; animation-duration: 13s; animation-delay: -9s; }
+.firefly-8 { top: 62%; left: 88%; animation-duration: 9s; animation-delay: -4s; }
+.firefly-9 { top: 50%; left: 36%; animation-duration: 14s; animation-delay: -11s; }
+
+@keyframes glimmer {
+  0%, 100% { opacity: 0; translate: 0 0; }
+  35% { opacity: .85; }
+  65% { opacity: .35; }
+  90% { opacity: 0; translate: 6px -34px; }
+}
 
 /* --- shell and top bar ------------------------------------------------- */
 
@@ -310,6 +414,50 @@ kbd {
 }
 
 .connection.error::before { background: var(--danger); }
+
+/* --- theme switch ------------------------------------------------------- */
+
+/* Four glyphs: follow AstrBot, daylight, dark forest, and the glowing night.
+   The choice is stored locally, so this console can differ from AstrBot. */
+.theme-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--paper-strong) 78%, transparent);
+}
+
+.theme-option {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  font-size: .92rem;
+  line-height: 1;
+  transition: color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.theme-option:hover {
+  color: var(--forest-700);
+  background: var(--moss);
+}
+
+.theme-option[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(140deg, var(--forest-500), var(--forest-700));
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--forest-700) 30%, transparent);
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .theme-option:hover { color: var(--forest-300); }
+[data-theme="nightglow"] .theme-option[aria-pressed="true"] {
+  color: var(--forest-950);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--forest-400) 55%, transparent);
+}
 
 /* --- buttons ----------------------------------------------------------- */
 
@@ -1678,52 +1826,52 @@ textarea {
 
 /* --- dark theme touch-ups ---------------------------------------------- */
 
-[data-theme="dark"] .brand-mark .trunk,
-[data-theme="dark"] .brand-mark .branches,
-[data-theme="dark"] .brand-mark .roots,
-[data-theme="dark"] .brand-mark .ground { stroke: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .trunk,
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .branches,
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .roots,
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .ground { stroke: var(--forest-300); }
 
-[data-theme="dark"] .empty-tree .trunk,
-[data-theme="dark"] .empty-tree .branches,
-[data-theme="dark"] .empty-tree .ground { stroke: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .empty-tree .trunk,
+:is([data-theme="dark"], [data-theme="nightglow"]) .empty-tree .branches,
+:is([data-theme="dark"], [data-theme="nightglow"]) .empty-tree .ground { stroke: var(--forest-300); }
 
-[data-theme="dark"] .eyebrow,
-[data-theme="dark"] .button-ghost,
-[data-theme="dark"] .text-button,
-[data-theme="dark"] .entry-expand,
-[data-theme="dark"] .tag { color: var(--forest-400); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .eyebrow,
+:is([data-theme="dark"], [data-theme="nightglow"]) .button-ghost,
+:is([data-theme="dark"], [data-theme="nightglow"]) .text-button,
+:is([data-theme="dark"], [data-theme="nightglow"]) .entry-expand,
+:is([data-theme="dark"], [data-theme="nightglow"]) .tag { color: var(--forest-400); }
 
-[data-theme="dark"] .button-secondary,
-[data-theme="dark"] .stat strong,
-[data-theme="dark"] .bulk-bar strong,
-[data-theme="dark"] .branch-head,
-[data-theme="dark"] .branch-count,
-[data-theme="dark"] .folder-pill,
-[data-theme="dark"] .page-button,
-[data-theme="dark"] .mobile-filter-toggle { color: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .button-secondary,
+:is([data-theme="dark"], [data-theme="nightglow"]) .stat strong,
+:is([data-theme="dark"], [data-theme="nightglow"]) .bulk-bar strong,
+:is([data-theme="dark"], [data-theme="nightglow"]) .branch-head,
+:is([data-theme="dark"], [data-theme="nightglow"]) .branch-count,
+:is([data-theme="dark"], [data-theme="nightglow"]) .folder-pill,
+:is([data-theme="dark"], [data-theme="nightglow"]) .page-button,
+:is([data-theme="dark"], [data-theme="nightglow"]) .mobile-filter-toggle { color: var(--forest-300); }
 
-[data-theme="dark"] .status-badge.enabled { color: #bcecca; background: #163f29; }
-[data-theme="dark"] .status-badge.disabled { color: #f2bbb5; background: #4a2927; }
-[data-theme="dark"] .toggle { background: #35473b; }
-[data-theme="dark"] .toggle-field i { background: #35473b; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .status-badge.enabled { color: #bcecca; background: #163f29; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .status-badge.disabled { color: #f2bbb5; background: #4a2927; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .toggle { background: #35473b; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .toggle-field i { background: #35473b; }
 /* the two rules above are attribute+class specific, so the on-state needs an
    equally specific dark override or every switch would look switched off */
-[data-theme="dark"] .toggle.on { background: var(--forest-600); }
-[data-theme="dark"] .toggle-field input:checked + i { background: var(--forest-600); }
-[data-theme="dark"] .canopy-total.is-active,
-[data-theme="dark"] .canopy-total,
-[data-theme="dark"] .leaf-chip { color: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .toggle.on { background: var(--forest-600); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .toggle-field input:checked + i { background: var(--forest-600); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .canopy-total.is-active,
+:is([data-theme="dark"], [data-theme="nightglow"]) .canopy-total,
+:is([data-theme="dark"], [data-theme="nightglow"]) .leaf-chip { color: var(--forest-300); }
 
-[data-theme="dark"] .canopy-total.is-active span { color: var(--forest-400); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .canopy-total.is-active span { color: var(--forest-400); }
 
-[data-theme="dark"] .leaf-chip.is-active { color: #eaf7ec; }
-[data-theme="dark"] .canopy-total.is-active span,
-[data-theme="dark"] .leaf-chip.is-active span { color: color-mix(in srgb, #eaf7ec 78%, transparent); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .leaf-chip.is-active { color: #eaf7ec; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .canopy-total.is-active span,
+:is([data-theme="dark"], [data-theme="nightglow"]) .leaf-chip.is-active span { color: color-mix(in srgb, #eaf7ec 78%, transparent); }
 /* mid-forest ink is too close to the dark canvas for small glyphs */
-[data-theme="dark"] .branch-chevron,
-[data-theme="dark"] .search-field { color: var(--forest-400); }
-[data-theme="dark"] .entry-menu.is-open .menu-trigger { color: var(--forest-300); }
-[data-theme="dark"] .form-section > legend { color: var(--forest-400); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .branch-chevron,
+:is([data-theme="dark"], [data-theme="nightglow"]) .search-field { color: var(--forest-400); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .entry-menu.is-open .menu-trigger { color: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .form-section > legend { color: var(--forest-400); }
 
 /* --- responsive -------------------------------------------------------- */
 
@@ -1856,4 +2004,5 @@ textarea {
   }
   .mote,
   .sky-tree { animation: none !important; }
+  .firefly { animation: none !important; opacity: .5; }
 }
