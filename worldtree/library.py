@@ -19,6 +19,59 @@ MAX_PAGE_SIZE = 100
 DEFAULT_PAGE_SIZE = 30
 MAX_IMPORT_ENTRIES = 2_000
 
+DEFAULT_SORT = "priority"
+#: Ordering modes offered by the management Page. Sorting stays on the backend
+#: so a large library never has to be shipped to the browser just to be
+#: re-ordered there.
+SORT_MODES: tuple[str, ...] = (
+    "priority",
+    "priority_desc",
+    "template",
+    "name",
+    "folder",
+    "updated",
+    "enabled",
+)
+STATUS_FILTERS: tuple[str, ...] = ("all", "enabled", "disabled", "scheduled", "scoped")
+
+#: Template ordering follows the declaration order of ENTRY_TEMPLATES, which
+#: runs from the most general template to the most narrowly scoped one.
+_TEMPLATE_ORDER: dict[str, int] = {key: index for index, key in enumerate(ENTRY_TEMPLATES)}
+
+
+def entry_sort_key(entry: WorldTreeEntry, mode: str = DEFAULT_SORT) -> tuple:
+    """Build a stable, type-homogeneous sort key for one ordering mode."""
+
+    name = entry.name.casefold()
+    folder = entry.folder.casefold()
+    if mode == "priority_desc":
+        return (-entry.priority, folder, name, entry.id)
+    if mode == "template":
+        order = _TEMPLATE_ORDER.get(entry.template, len(_TEMPLATE_ORDER))
+        return (order, entry.priority, name, entry.id)
+    if mode == "name":
+        return (name, entry.id)
+    if mode == "folder":
+        # Entries without a folder belong at the end rather than sorting first
+        # because of their empty string.
+        return (1 if not folder else 0, folder, entry.priority, name)
+    if mode == "updated":
+        return (-int(entry.updated_at or 0), name, entry.id)
+    if mode == "enabled":
+        return (0 if entry.enabled else 1, entry.priority, name, entry.id)
+    return (entry.priority, folder, name, entry.id)
+
+
+def normalised_sort(value: Any) -> str:
+    """Accept only known ordering modes so a stray query string cannot fail."""
+
+    mode = str(value or DEFAULT_SORT).strip().lower()
+    if mode not in SORT_MODES:
+        raise EntryValidationError(
+            f"未知的排序方式：{value!s}。可选：{', '.join(SORT_MODES)}"
+        )
+    return mode
+
 
 class RevisionConflict(RuntimeError):
     """Raised when a page attempts to save an out-of-date library view."""
@@ -120,11 +173,14 @@ class WorldTreeLibrary:
             "revision": self._revision,
         }
 
-    def list_entries(self) -> list[WorldTreeEntry]:
-        return sorted(
-            self._entries.values(),
-            key=lambda item: (item.priority, item.folder.casefold(), item.name.casefold(), item.id),
-        )
+    def list_entries(self, sort: str = DEFAULT_SORT) -> list[WorldTreeEntry]:
+        """Return every entry in a deterministic order.
+
+        The default mode is also the persisted order, so callers that write the
+        library back to disk must not pass a different mode.
+        """
+
+        return sorted(self._entries.values(), key=lambda item: entry_sort_key(item, sort))
 
     def get(self, entry_id: str) -> WorldTreeEntry | None:
         return self._entries.get(entry_id)
@@ -148,16 +204,24 @@ class WorldTreeLibrary:
         status: str = "all",
         folder: str = "",
         tag: str = "",
+        template: str = "",
+        sort: str = DEFAULT_SORT,
     ) -> dict[str, Any]:
-        """Search and paginate on the backend instead of expanding every entry."""
+        """Search, sort and paginate on the backend instead of expanding every entry."""
 
         page = max(1, int(page))
         page_size = min(MAX_PAGE_SIZE, max(1, int(page_size)))
         query = query.strip()
         if len(query) > 200:
             raise EntryValidationError("搜索关键词不能超过 200 个字符")
-        if status not in {"all", "enabled", "disabled"}:
-            raise EntryValidationError("状态筛选只能是 all、enabled 或 disabled")
+        if status not in STATUS_FILTERS:
+            raise EntryValidationError(
+                f"状态筛选只能是 {'、'.join(STATUS_FILTERS)}"
+            )
+        sort = normalised_sort(sort)
+        wanted_template = template.strip().lower()
+        if wanted_template and wanted_template not in ENTRY_TEMPLATES:
+            raise EntryValidationError(f"未知的条目模板：{template}")
 
         wanted_folder = folder.strip().casefold()
         wanted_tag = tag.strip().casefold()
@@ -167,6 +231,12 @@ class WorldTreeLibrary:
             if status == "enabled" and not entry.enabled:
                 return False
             if status == "disabled" and entry.enabled:
+                return False
+            if status == "scheduled" and not entry.has_cron:
+                return False
+            if status == "scoped" and not entry.scope:
+                return False
+            if wanted_template and entry.template != wanted_template:
                 return False
             if wanted_folder and entry.folder.casefold() != wanted_folder:
                 return False
@@ -186,7 +256,7 @@ class WorldTreeLibrary:
             ).casefold()
             return all(word in haystack for word in words)
 
-        matching = [entry for entry in self.list_entries() if matches(entry)]
+        matching = [entry for entry in self.list_entries(sort) if matches(entry)]
         total = len(matching)
         total_pages = max(1, (total + page_size - 1) // page_size)
         page = min(page, total_pages)
@@ -207,6 +277,9 @@ class WorldTreeLibrary:
                 "page_size": page_size,
                 "total": total,
                 "total_pages": total_pages,
+                # Echo the effective ordering so the Page can re-sync its
+                # <select> after a stray or omitted query parameter.
+                "sort": sort,
             },
             "facets": {"folders": folders, "tags": tags},
             "stats": self.stats(),
@@ -222,6 +295,7 @@ class WorldTreeLibrary:
             "folders": len({item.folder for item in entries if item.folder}),
             "tags": len({tag.casefold() for item in entries for tag in item.tags}),
             "scheduled": sum(1 for item in entries if item.has_cron),
+            "scoped": sum(1 for item in entries if item.scope),
         }
 
     def create(self, payload: dict[str, Any], *, expected_revision: int | None = None) -> WorldTreeEntry:
@@ -272,6 +346,27 @@ class WorldTreeLibrary:
         entry = WorldTreeEntry.from_dict(data)
         self._ensure_name_available(entry.name, excluding_id=entry_id)
         self._entries[entry_id] = entry
+        self._persist()
+        return entry
+
+    def duplicate(
+        self, entry_id: str, *, expected_revision: int | None = None
+    ) -> WorldTreeEntry:
+        """Copy an entry under a free name so variants do not need retyping."""
+
+        self._check_revision(expected_revision)
+        source = self._require_entry(entry_id)
+        names = {item.name.casefold() for item in self._entries.values()}
+        data = source.to_dict()
+        data["id"] = ""
+        # Names are capped at 80 characters, so the stem is trimmed before the
+        # suffix is appended.
+        data["name"] = self._unique_name(f"{source.name[:76]} 副本", names)
+        now = int(time.time())
+        data["created_at"] = now
+        data["updated_at"] = now
+        entry = WorldTreeEntry.from_dict(prepared_entry_payload(data))
+        self._entries[entry.id] = entry
         self._persist()
         return entry
 

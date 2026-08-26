@@ -88,6 +88,12 @@ class WorldTreeLorePlugin(Star):
             "Toggle a WorldTree Lore entry",
         )
         context.register_web_api(
+            f"{PAGE_ROUTE}/entry/<entry_id>/duplicate",
+            self.web_duplicate_entry,
+            ["POST"],
+            "Duplicate a WorldTree Lore entry",
+        )
+        context.register_web_api(
             f"{PAGE_ROUTE}/entry/<entry_id>/delete",
             self.web_delete_entry,
             ["POST"],
@@ -521,6 +527,8 @@ class WorldTreeLorePlugin(Star):
                     status=request.query.get("status", "all"),
                     folder=request.query.get("folder", ""),
                     tag=request.query.get("tag", ""),
+                    template=request.query.get("template", ""),
+                    sort=request.query.get("sort", "priority"),
                 )
             )
         except EntryValidationError as exc:
@@ -592,6 +600,21 @@ class WorldTreeLorePlugin(Star):
                     expected_revision=self._payload_revision(payload),
                 )
             return json_response({"revision": self.library.revision, "entry": entry.summary()})
+        except RevisionConflict as exc:
+            return error_response(str(exc), status_code=409)
+        except EntryValidationError as exc:
+            return error_response(str(exc), status_code=404 if "找不到" in str(exc) else 400)
+
+    async def web_duplicate_entry(self, entry_id: str):
+        payload = await self._json_payload()
+        if isinstance(payload, Exception):
+            return error_response(str(payload))
+        try:
+            async with self._mutation_lock:
+                entry = self.library.duplicate(
+                    entry_id, expected_revision=self._payload_revision(payload)
+                )
+            return json_response({"revision": self.library.revision, "entry": entry.to_dict()})
         except RevisionConflict as exc:
             return error_response(str(exc), status_code=409)
         except EntryValidationError as exc:
@@ -669,8 +692,17 @@ class WorldTreeLorePlugin(Star):
 
     async def web_export_entries(self):
         export_format = request.query.get("format", "yaml").casefold()
+        # An empty "ids" query means "export the whole library"; a non-empty one
+        # narrows the backup down to the entries selected in the Page.
+        wanted_ids = [item for item in request.query.get("ids", "").split(",") if item.strip()]
+        entries = self.library.entries
+        if wanted_ids:
+            selected = set(wanted_ids)
+            entries = [entry for entry in entries if entry.id in selected]
+            if not entries:
+                return error_response("所选条目已不存在，请刷新后重试", status_code=404)
         try:
-            data = dump_entries(self.library.entries, export_format)
+            data = dump_entries(entries, export_format)
         except EntryValidationError as exc:
             return error_response(str(exc))
         suffix = "json" if export_format == "json" else "yaml"

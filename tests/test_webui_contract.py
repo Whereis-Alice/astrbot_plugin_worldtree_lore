@@ -45,5 +45,69 @@ class WebUiContractTests(unittest.TestCase):
         self.assertIn('bridge.apiPost("entries/bulk"', script)
 
 
+    def test_page_exposes_sorting_and_template_controls(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        # Ordering and template filtering are backend concerns, so the page must
+        # ship the controls and forward both as query parameters.
+        self.assertIn('id="sortSelect"', markup)
+        self.assertIn('id="templateFilter"', markup)
+        for mode in (
+            "priority",
+            "priority_desc",
+            "template",
+            "name",
+            "folder",
+            "updated",
+            "enabled",
+        ):
+            self.assertIn(f'value="{mode}"', markup)
+        self.assertIn("sort: DEFAULT_SORT,", script)
+        self.assertIn("state.filters.sort = ", script)
+        self.assertIn("state.filters.template = ", script)
+        self.assertIn('bridge.apiGet("entries", state.filters)', script)
+
+        # Each card advertises its template both as text and as a styling hook.
+        self.assertIn("template-pill", script)
+        self.assertIn("dataset.template", script)
+        self.assertIn('[data-template="schedule"]', styles)
+
+    def test_page_supports_duplicate_and_selective_export(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        main = (ROOT / "main.py").read_text(encoding="utf-8")
+
+        self.assertIn('id="duplicateEntryButton"', markup)
+        self.assertIn('id="exportSelectedButton"', markup)
+        self.assertIn("entry/${entryId}/duplicate", script)
+        self.assertIn("params.ids = ids.join", script)
+        self.assertIn("/entry/<entry_id>/duplicate", main)
+        self.assertIn("def web_duplicate_entry", main)
+
+    def test_tree_layout_and_grouping_are_present(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('id="tree"', markup)
+        self.assertIn('id="collapseAllButton"', markup)
+        self.assertIn('id="densityButton"', markup)
+        self.assertIn("branch-head", script)
+        self.assertIn(".tree-trunk", styles)
+        self.assertIn(".branch-body", styles)
+
+
 if __name__ == "__main__":
     unittest.main()

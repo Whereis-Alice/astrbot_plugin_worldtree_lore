@@ -160,6 +160,90 @@ class LibraryTests(unittest.TestCase):
         self.assertIn("城市", self.library.get(first.id).tags)
         self.assertGreaterEqual(self.config.save_calls, 3)
 
+    def test_sort_modes_cover_every_page_ordering_option(self) -> None:
+        # Ordering happens on the backend so a large library never has to be
+        # shipped to the browser only to be re-sorted there.
+        trunk = self.library.create(
+            {"name": "b 主干", "content": "x", "keywords": ["b"], "priority": 40, "folder": "地点", "template": "common"}
+        )
+        core = self.library.create(
+            {"name": "a 树心", "content": "x", "keywords": ["a"], "priority": 5, "folder": "", "template": "resident"}
+        )
+        leaf = self.library.create(
+            {
+                "name": "c 新叶",
+                "content": "x",
+                "keywords": [],
+                "priority": 120,
+                "folder": "日程",
+                "template": "schedule",
+                "cron": "0 9 * * 1-5",
+                "enabled": False,
+            }
+        )
+
+        # All three are created within the same second, so give them distinct
+        # timestamps to make the "recently updated" ordering observable.
+        core.updated_at = 1_000
+        trunk.updated_at = 2_000
+        leaf.updated_at = 3_000
+
+        def names(mode: str) -> list[str]:
+            return [item["name"] for item in self.library.paged_entries(sort=mode)["entries"]]
+
+        self.assertEqual(names("priority"), ["a 树心", "b 主干", "c 新叶"])
+        self.assertEqual(names("priority_desc"), ["c 新叶", "b 主干", "a 树心"])
+        self.assertEqual(names("name"), ["a 树心", "b 主干", "c 新叶"])
+        # common precedes resident precedes schedule in template declaration order.
+        self.assertEqual(names("template"), ["b 主干", "a 树心", "c 新叶"])
+        # Unfiled entries sort last instead of first despite their empty folder.
+        self.assertEqual(names("folder")[-1], "a 树心")
+        self.assertEqual(names("enabled")[-1], "c 新叶")
+        self.assertEqual(names("updated")[0], "c 新叶")
+        self.assertEqual(self.library.paged_entries(sort="name")["pagination"]["sort"], "name")
+
+    def test_unknown_sort_mode_is_rejected_with_a_readable_message(self) -> None:
+        with self.assertRaises(EntryValidationError) as caught:
+            self.library.paged_entries(sort="随便排")
+        self.assertIn("排序", str(caught.exception))
+
+    def test_status_and_template_filters_narrow_the_listing(self) -> None:
+        self.library.create(
+            {"name": "群规", "content": "x", "keywords": [], "scope": ["group:1"], "template": "group"}
+        )
+        self.library.create(
+            {"name": "晨会", "content": "x", "keywords": [], "cron": "0 9 * * *", "template": "schedule"}
+        )
+        self.library.create({"name": "散条目", "content": "x", "keywords": ["k"], "template": "common"})
+
+        scoped = self.library.paged_entries(status="scoped")
+        self.assertEqual([item["name"] for item in scoped["entries"]], ["群规"])
+        scheduled = self.library.paged_entries(status="scheduled")
+        self.assertEqual([item["name"] for item in scheduled["entries"]], ["晨会"])
+        by_template = self.library.paged_entries(template="common")
+        self.assertEqual([item["name"] for item in by_template["entries"]], ["散条目"])
+        self.assertEqual(self.library.stats()["scoped"], 1)
+
+        with self.assertRaises(EntryValidationError):
+            self.library.paged_entries(template="不存在的模板")
+
+    def test_duplicate_creates_an_independent_copy_with_a_unique_name(self) -> None:
+        source = self.library.create(
+            {"name": "雾港档案", "content": "原内容", "keywords": ["雾港"], "tags": ["主线"]}
+        )
+        copy = self.library.duplicate(source.id, expected_revision=self.library.revision)
+
+        self.assertEqual(copy.name, "雾港档案 副本")
+        self.assertNotEqual(copy.id, source.id)
+        self.assertEqual(copy.content, source.content)
+        self.assertEqual(self.library.stats()["total"], 2)
+
+        again = self.library.duplicate(source.id, expected_revision=self.library.revision)
+        self.assertNotEqual(again.name, copy.name)
+
+        with self.assertRaises(RevisionConflict):
+            self.library.duplicate(source.id, expected_revision=self.library.revision - 1)
+
     def test_import_rename_strategy_keeps_both_entries(self) -> None:
         self.library.create({"name": "同名", "content": "原内容", "keywords": ["原"]})
         report = self.library.import_entries(

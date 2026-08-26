@@ -5,24 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="世界树的检索、批量编辑、导入和导出管理台"
+      content="世界树的检索、排序、批量编辑、导入和导出管理台"
     />
     <title>世界树管理台</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
-    <div class="tree-canopy" aria-hidden="true"></div>
-    <div class="app-shell" id="appShell">
+    <div class="sky" aria-hidden="true">
+      <svg class="sky-tree" viewBox="250 -200 1300 1250" preserveAspectRatio="xMidYMax meet" focusable="false">
+        <defs>
+          <radialGradient id="skyCrown">
+            <stop class="stop-core" offset="0" />
+            <stop class="stop-mid" offset=".58" />
+            <stop class="stop-edge" offset="1" />
+          </radialGradient>
+          <radialGradient id="skyLeaf">
+            <stop class="stop-core" offset="0" />
+            <stop class="stop-mid" offset=".62" />
+            <stop class="stop-edge" offset="1" />
+          </radialGradient>
+        </defs>
+        <ellipse class="sky-crown" cx="800" cy="296" rx="512" ry="330" />
+        <g class="sky-leaves" id="skyLeaves"><circle cx="482" cy="419" r="49"/><circle cx="385" cy="464" r="77"/><circle cx="323" cy="526" r="60"/><circle cx="307" cy="461" r="70"/><circle cx="386" cy="379" r="56"/><circle cx="310" cy="387" r="37"/><circle cx="341" cy="318" r="53"/><circle cx="488" cy="357" r="51"/><circle cx="385" cy="368" r="49"/><circle cx="304" cy="370" r="66"/><circle cx="312" cy="344" r="43"/><circle cx="409" cy="279" r="54"/><circle cx="337" cy="261" r="45"/><circle cx="338" cy="229" r="73"/><circle cx="391" cy="194" r="38"/><circle cx="516" cy="303" r="92"/><circle cx="418" cy="242" r="86"/><circle cx="328" cy="235" r="73"/><circle cx="353" cy="195" r="39"/><circle cx="380" cy="157" r="41"/><circle cx="485" cy="201" r="49"/><circle cx="436" cy="137" r="48"/><circle cx="468" cy="125" r="59"/><circle cx="490" cy="115" r="73"/><circle cx="537" cy="272" r="63"/><circle cx="426" cy="262" r="74"/><circle cx="423" cy="239" r="44"/><circle cx="331" cy="238" r="63"/><circle cx="371" cy="160" r="66"/><circle cx="410" cy="93" r="61"/><circle cx="454" cy="67" r="62"/><circle cx="639" cy="206" r="52"/><circle cx="559" cy="162" r="63"/><circle cx="498" cy="139" r="42"/><circle cx="511" cy="115" r="42"/><circle cx="653" cy="103" r="41"/><circle cx="619" cy="32" r="49"/><circle cx="589" cy="133" r="67"/><circle cx="615" cy="87" r="50"/><circle cx="776" cy="28" r="72"/><circle cx="840" cy="174" r="48"/><circle cx="784" cy="24" r="50"/><circle cx="869" cy="20" r="37"/><circle cx="921" cy="117" r="54"/><circle cx="958" cy="60" r="54"/><circle cx="975" cy="73" r="70"/><circle cx="942" cy="200" r="94"/><circle cx="922" cy="84" r="85"/><circle cx="893" cy="-1" r="71"/><circle cx="956" cy="7" r="47"/><circle cx="996" cy="100" r="87"/><circle cx="1016" cy="21" r="47"/><circle cx="1062" cy="35" r="38"/><circle cx="1010" cy="235" r="58"/><circle cx="1028" cy="131" r="78"/><circle cx="1082" cy="67" r="72"/><circle cx="1108" cy="187" r="65"/><circle cx="1144" cy="116" r="56"/><circle cx="1186" cy="185" r="75"/><circle cx="1059" cy="285" r="48"/><circle cx="1145" cy="201" r="86"/><circle cx="1179" cy="111" r="41"/><circle cx="1220" cy="158" r="68"/><circle cx="1175" cy="287" r="82"/><circle cx="1252" cy="261" r="65"/><circle cx="1255" cy="312" r="67"/><circle cx="1097" cy="310" r="54"/><circle cx="1210" cy="148" r="41"/><circle cx="1189" cy="259" r="74"/><circle cx="1229" cy="194" r="56"/><circle cx="1258" cy="251" r="41"/><circle cx="1216" cy="319" r="42"/><circle cx="1300" cy="339" r="49"/><circle cx="1196" cy="274" r="82"/><circle cx="1246" cy="202" r="66"/><circle cx="1272" cy="264" r="45"/><circle cx="1220" cy="336" r="65"/><circle cx="1296" cy="290" r="73"/><circle cx="1301" cy="376" r="55"/><circle cx="1103" cy="394" r="76"/><circle cx="1191" cy="347" r="81"/><circle cx="1238" cy="283" r="53"/><circle cx="1259" cy="345" r="56"/><circle cx="1197" cy="377" r="47"/><circle cx="1268" cy="343" r="38"/><circle cx="1273" cy="373" r="47"/><circle cx="1268" cy="403" r="52"/><circle cx="1188" cy="426" r="84"/><circle cx="1249" cy="416" r="62"/><circle cx="1240" cy="479" r="36"/></g>
+        <path class="sky-limb sky-limb-1" d="M800 760Q788 623 800 486" />
+        <path class="sky-limb sky-limb-2" d="M800 486Q701 440 615 414M800 486Q738 399 681 332M800 486Q798 380 787 294M800 486Q862 403 925 345M800 486Q894 437 972 396" />
+        <path class="sky-limb sky-limb-3" d="M615 414Q542 417 482 419M615 414Q544 386 488 357M615 414Q559 354 516 303M681 332Q603 296 537 272M681 332Q661 262 639 206M787 294Q756 231 728 181M787 294Q813 227 840 174M925 345Q939 266 942 200M925 345Q974 286 1010 235M925 345Q1001 318 1059 285M972 396Q1036 343 1097 310M972 396Q1044 363 1105 342M972 396Q1044 400 1103 394" />
+        <path class="sky-limb sky-limb-4" d="M482 419Q428 442 385 464M482 419Q429 398 386 379M488 357Q431 358 385 368M488 357Q445 313 409 279M516 303Q460 272 418 242M516 303Q500 247 485 201M537 272Q476 266 426 262M537 272Q476 250 423 239M537 272Q504 212 483 160M639 206Q597 178 559 162M639 206Q647 149 653 103M728 181Q686 157 652 137M728 181Q733 128 736 85M840 174Q836 123 832 80M840 174Q882 139 921 117M942 200Q929 137 922 84M942 200Q974 146 996 100M1010 235Q1017 177 1028 131M1010 235Q1064 208 1108 187M1059 285Q1105 237 1145 201M1059 285Q1123 286 1175 287M1097 310Q1123 250 1150 204M1097 310Q1146 279 1189 259M1097 310Q1163 309 1216 319M1105 342Q1154 303 1196 274M1105 342Q1168 340 1220 336M1103 394Q1151 367 1191 347M1103 394Q1156 389 1197 377M1103 394Q1150 412 1188 426" />
+        <path class="sky-limb sky-limb-5" d="M385 464Q350 498 323 526M385 464Q342 460 307 461M386 379Q344 383 310 387M386 379Q361 346 341 318M385 368Q350 392 323 413M385 368Q341 371 304 370M385 368Q346 352 312 344M409 279Q369 270 337 261M409 279Q372 249 338 229M409 279Q396 233 391 194M418 242Q369 236 328 235M418 242Q381 217 353 195M418 242Q395 197 380 157M485 201Q460 164 436 137M485 201Q474 160 468 125M485 201Q491 154 490 115M426 262Q382 276 345 287M426 262Q387 231 360 201M423 239Q373 243 331 238M423 239Q391 198 371 160M483 160Q442 124 410 93M483 160Q464 110 454 67M483 160Q485 113 486 74M559 162Q525 165 499 173M559 162Q526 147 498 139M559 162Q534 135 511 115M653 103Q636 63 619 32M653 103Q663 60 676 25M653 103Q671 68 689 41M652 137Q617 133 589 133M652 137Q630 110 615 87M736 85Q728 45 724 11M736 85Q757 53 776 28M832 80Q808 48 784 24M832 80Q851 46 869 20M921 117Q941 85 958 60M921 117Q951 93 975 73M921 117Q962 105 998 100M922 84Q900 46 882 15M922 84Q910 36 893 -1M922 84Q938 40 956 7M996 100Q1004 56 1016 21M996 100Q1033 65 1062 35M1028 131Q1012 90 1000 55M1028 131Q1031 86 1028 49M1028 131Q1055 94 1082 67M1108 187Q1130 150 1144 116M1108 187Q1151 187 1186 185M1145 201Q1161 151 1179 111M1145 201Q1188 180 1220 158M1175 287Q1217 271 1252 261M1175 287Q1218 301 1255 312M1150 204Q1157 155 1164 115M1150 204Q1183 173 1210 148M1189 259Q1211 223 1229 194M1189 259Q1227 256 1258 251M1216 319Q1259 301 1293 285M1216 319Q1263 327 1300 339M1216 319Q1261 337 1299 348M1196 274Q1222 234 1246 202M1196 274Q1237 266 1272 264M1220 336Q1264 314 1296 290M1220 336Q1265 358 1301 376M1191 347Q1217 312 1238 283M1191 347Q1228 345 1259 345M1197 377Q1235 358 1268 343M1197 377Q1239 373 1273 373M1197 377Q1236 393 1268 403M1188 426Q1221 419 1249 416M1188 426Q1216 456 1240 479" />
+        <path class="sky-root" d="M800 760Q879 799 946 859M800 760Q715 783 625 780M946 859Q1006 855 1067 859M946 859Q978 898 1011 938M625 780Q584 831 555 890M625 780Q574 776 526 756M800 760Q814 820 811 884M800 760Q781 819 771 881M1067 859Q1099 837 1135 825M1067 859Q1108 873 1144 896M1011 938Q1042 955 1068 980M1011 938Q1012 968 1004 998M555 890Q550 932 550 975M555 890Q512 898 468 898M526 756Q500 775 474 794M526 756Q499 741 475 719M811 884Q841 917 861 959M811 884Q809 929 813 975M771 881Q777 917 785 953M771 881Q739 902 702 916" />
+        <use class="sky-leaves-front" href="#skyLeaves" />
+      </svg>
+      <div class="sky-mist"></div>
+      <span class="mote mote-a"></span>
+      <span class="mote mote-b"></span>
+      <span class="mote mote-c"></span>
+    </div>
+    <div class="app-shell" id="appShell" data-density="cosy">
       <header class="topbar">
         <div class="brand">
           <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
-            <path d="M32 56V29" class="trunk" />
-            <path d="M32 41 15 27M32 37l17-15M32 28 22 13M32 25l11-13" class="branches" />
-            <circle cx="14" cy="26" r="8" class="leaf leaf-a" />
-            <circle cx="50" cy="21" r="9" class="leaf leaf-b" />
-            <circle cx="21" cy="12" r="8" class="leaf leaf-c" />
-            <circle cx="44" cy="11" r="8" class="leaf leaf-a" />
-            <path d="M15 55h34" class="ground" />
+            <path d="M32 58V30" class="trunk" />
+            <path d="M32 44 16 30M32 39l16-13M32 30 23 16M32 27l10-12" class="branches" />
+            <path d="M32 58c-6 0-9 2-12 4M32 58c6 0 9 2 12 4M32 58v6" class="roots" />
+            <circle cx="15" cy="28" r="8" class="leaf leaf-a" />
+            <circle cx="49" cy="24" r="9" class="leaf leaf-b" />
+            <circle cx="22" cy="14" r="8" class="leaf leaf-c" />
+            <circle cx="43" cy="13" r="7" class="leaf leaf-a" />
+            <circle cx="32" cy="8" r="6" class="leaf leaf-b" />
           </svg>
           <div>
             <p class="eyebrow">WORLD TREE LORE</p>
@@ -46,17 +75,14 @@
             <span><span aria-hidden="true">⌕</span> 筛选与概览</span>
             <strong id="mobileFilterState">展开</strong>
           </button>
-          <section class="root-card">
-            <div class="root-card-head">
-              <span class="root-dot" aria-hidden="true"></span>
-              <span>条目根系</span>
+
+          <section class="canopy-card" aria-labelledby="canopyHeading">
+            <div class="card-head">
+              <span class="leaf-dot" aria-hidden="true"></span>
+              <h2 id="canopyHeading">树冠概览</h2>
             </div>
-            <div class="stat-grid" id="statsGrid" aria-live="polite">
-              <div class="stat"><strong>—</strong><span>全部</span></div>
-              <div class="stat"><strong>—</strong><span>启用</span></div>
-              <div class="stat"><strong>—</strong><span>文件夹</span></div>
-              <div class="stat"><strong>—</strong><span>日程</span></div>
-            </div>
+            <div class="stat-grid" id="statsGrid" aria-live="polite"></div>
+            <p class="canopy-hint">点击叶片即可按该条件筛选。</p>
           </section>
 
           <section class="filter-section" aria-labelledby="filterHeading">
@@ -71,17 +97,24 @@
                 id="searchInput"
                 type="search"
                 maxlength="200"
-                placeholder="名称、内容、标签、关键词…"
+                placeholder="搜索名称或内容…"
+                title="同时匹配条目名称、正文、标签与关键词"
                 autocomplete="off"
               />
+              <kbd aria-hidden="true">/</kbd>
             </div>
 
             <label class="field-label" for="statusFilter">状态</label>
             <select id="statusFilter">
               <option value="all">全部状态</option>
               <option value="enabled">仅启用</option>
-              <option value="disabled">仅禁用</option>
+              <option value="disabled">仅停用</option>
+              <option value="scheduled">仅日程（Cron）</option>
+              <option value="scoped">仅范围限定</option>
             </select>
+
+            <label class="field-label" for="templateFilter">模板</label>
+            <select id="templateFilter"><option value="">全部模板</option></select>
 
             <label class="field-label" for="folderFilter">文件夹</label>
             <select id="folderFilter"><option value="">全部文件夹</option></select>
@@ -101,27 +134,49 @@
           </section>
 
           <p class="sidebar-note">
-            搜索、筛选与分页都在服务端完成；即使条目很多，也无需逐个展开。
+            搜索、排序与分页都在服务端完成；条目再多也不必逐个展开。按 <kbd>/</kbd> 搜索，按 <kbd>N</kbd> 新建。
           </p>
         </aside>
 
-        <main class="content" aria-live="polite">
+        <main class="content">
           <section class="content-heading">
-            <div>
+            <div class="content-title">
               <p class="eyebrow" id="resultCaption">条目列表</p>
               <h2 id="resultTitle">正在读取枝叶…</h2>
             </div>
             <div class="view-options">
-              <button class="button button-secondary button-compact" id="selectPageButton" type="button" disabled>
-                选择本页
-              </button>
-              <label for="pageSizeSelect">每页</label>
-              <select id="pageSizeSelect" aria-label="每页条目数">
-                <option value="20">20</option>
-                <option value="30" selected>30</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
+              <label class="view-field" for="sortSelect">
+                <span>排序</span>
+                <select id="sortSelect">
+                  <option value="priority">优先级（小到大）</option>
+                  <option value="priority_desc">优先级（大到小）</option>
+                  <option value="template">条目类型（模板）</option>
+                  <option value="folder">文件夹</option>
+                  <option value="name">名称 A→Z</option>
+                  <option value="updated">最近更新</option>
+                  <option value="enabled">启用状态</option>
+                </select>
+              </label>
+              <label class="view-field" for="pageSizeSelect">
+                <span>每页</span>
+                <select id="pageSizeSelect">
+                  <option value="20">20</option>
+                  <option value="30" selected>30</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+              </label>
+              <div class="view-buttons">
+                <button class="button button-secondary button-compact" id="densityButton" type="button" aria-pressed="false">
+                  紧凑视图
+                </button>
+                <button class="button button-secondary button-compact" id="collapseAllButton" type="button">
+                  收起全部
+                </button>
+                <button class="button button-secondary button-compact" id="selectPageButton" type="button" disabled>
+                  选择本页
+                </button>
+              </div>
             </div>
           </section>
 
@@ -130,7 +185,7 @@
             <div class="bulk-controls">
               <select id="bulkAction" aria-label="批量操作">
                 <option value="set_enabled_true">批量启用</option>
-                <option value="set_enabled_false">批量禁用</option>
+                <option value="set_enabled_false">批量停用</option>
                 <option value="set_folder">移动到文件夹</option>
                 <option value="add_tag">添加标签</option>
                 <option value="remove_tag">移除标签</option>
@@ -138,13 +193,32 @@
               </select>
               <input id="bulkValue" type="text" maxlength="80" placeholder="文件夹或标签" />
               <button class="button button-secondary" id="bulkApplyButton" type="button">应用</button>
+              <button class="button button-ghost button-compact" id="exportSelectedButton" type="button">导出所选</button>
               <button class="text-button" id="clearSelectionButton" type="button">取消选择</button>
             </div>
           </section>
 
-          <div class="entry-list" id="entryList" aria-label="世界书条目"></div>
+          <div class="tree" id="tree">
+            <span class="tree-trunk" aria-hidden="true"></span>
+            <div class="branch-list" id="entryList" aria-label="世界书条目" aria-busy="false"></div>
+            <svg class="tree-roots" viewBox="0 0 240 54" aria-hidden="true" focusable="false">
+              <path d="M120 0v20" />
+              <path d="M120 20c0 12-26 14-44 20M120 20c0 12 26 14 44 20" />
+              <path d="M120 20c-4 14-32 20-56 22M120 20c4 14 32 20 56 22" />
+              <path d="M120 20v30" />
+            </svg>
+          </div>
+
           <div class="empty-state" id="emptyState" hidden>
-            <div class="empty-tree" aria-hidden="true">♧</div>
+            <svg class="empty-tree" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+              <path d="M48 86V44" class="trunk" />
+              <path d="M48 62 30 48M48 56l18-14M48 44 36 30" class="branches" />
+              <circle cx="28" cy="45" r="11" class="leaf leaf-a" />
+              <circle cx="68" cy="39" r="12" class="leaf leaf-b" />
+              <circle cx="35" cy="27" r="10" class="leaf leaf-c" />
+              <circle cx="58" cy="22" r="9" class="leaf leaf-a" />
+              <path d="M30 86h36" class="ground" />
+            </svg>
             <h3>这里还没有枝叶</h3>
             <p>新建第一个条目，或导入已有的 JSON/YAML 世界书。</p>
             <button class="button button-primary" id="emptyCreateButton" type="button">新建条目</button>
@@ -165,72 +239,104 @@
           <button class="icon-button" id="closeEditorButton" type="button" aria-label="关闭编辑器">×</button>
         </header>
         <form id="entryForm" novalidate>
-          <div class="form-grid">
-            <label>
-              <span>模板</span>
-              <select id="templateInput" name="template"></select>
-            </label>
-            <label class="toggle-field">
-              <span>全局启用</span>
-              <input id="enabledInput" name="enabled" type="checkbox" checked />
-              <i aria-hidden="true"></i>
-            </label>
-            <label class="wide">
-              <span>名称 <em>必填</em></span>
-              <input id="nameInput" name="name" type="text" maxlength="80" required placeholder="例如：冒险者公会" />
-            </label>
-            <label>
-              <span>文件夹</span>
-              <input id="folderInput" name="folder" type="text" maxlength="80" placeholder="例如：世界观 / 角色" />
-            </label>
-            <label>
-              <span>标签</span>
-              <input id="tagsInput" name="tags" type="text" maxlength="800" placeholder="用逗号分隔，例如：主线, 城市" />
-            </label>
-            <label>
-              <span>优先级</span>
-              <input id="priorityInput" name="priority" type="number" min="-9999" max="9999" step="1" value="50" />
-            </label>
-            <label>
-              <span>生效概率</span>
-              <input id="probabilityInput" name="probability" type="number" min="0" max="1" step="0.01" value="1" />
-            </label>
-            <label>
-              <span>生效时长（秒）</span>
-              <input id="durationInput" name="duration" type="number" min="0" max="31536000" step="1" value="180" />
-            </label>
-            <label>
-              <span>最多注入次数</span>
-              <input id="timesInput" name="times" type="number" min="0" max="1000000" step="1" value="5" />
-            </label>
-            <label class="wide">
-              <span>关键词 / 触发器</span>
-              <textarea id="keywordsInput" name="keywords" rows="3" maxlength="8500" placeholder="每行一个。普通文本按字面量匹配；正则请明确写为 re:&lt;表达式&gt;。"></textarea>
-              <small>留空时仅由 Cron 触发。导入的上游条目会保留原有正则行为。</small>
-            </label>
-            <label>
-              <span>关键词模式</span>
-              <select id="keywordModeInput" name="keyword_mode">
-                <option value="modern">字面量优先（推荐）</option>
-                <option value="legacy_regex">兼容旧世界书：全部按正则</option>
-              </select>
-            </label>
-            <label>
-              <span>Cron（分 时 日 月 周）</span>
-              <input id="cronInput" name="cron" type="text" maxlength="128" placeholder="例如：0 9 * * 1-5" />
-            </label>
-            <label class="wide">
-              <span>适用范围</span>
-              <textarea id="scopeInput" name="scope" rows="2" maxlength="17000" placeholder="每行一个：admin、user:&lt;用户 ID&gt;、group:&lt;群 ID&gt; 或 session:&lt;UMO&gt;。留空代表不限。"></textarea>
-            </label>
-            <label class="wide content-field">
-              <span>注入内容 <em>必填</em></span>
-              <textarea id="contentInput" name="content" rows="12" maxlength="50000" required placeholder="写入要让模型在触发时参考的设定、规则或背景。支持 {user_id}、{user_name}、{user}、{time}、{entry_name}。"></textarea>
-            </label>
+          <div class="form-body">
+            <fieldset class="form-section">
+              <legend>基础</legend>
+              <div class="form-grid">
+                <label>
+                  <span>模板</span>
+                  <select id="templateInput" name="template"></select>
+                </label>
+                <label class="toggle-field">
+                  <span>全局启用</span>
+                  <input id="enabledInput" name="enabled" type="checkbox" checked />
+                  <i aria-hidden="true"></i>
+                </label>
+                <label class="wide">
+                  <span>名称 <em>必填</em></span>
+                  <input id="nameInput" name="name" type="text" maxlength="80" required placeholder="例如：冒险者公会" />
+                </label>
+                <label>
+                  <span>文件夹</span>
+                  <input id="folderInput" name="folder" type="text" maxlength="80" placeholder="例如：世界观 / 角色" />
+                </label>
+                <label>
+                  <span>标签</span>
+                  <input id="tagsInput" name="tags" type="text" maxlength="800" placeholder="用逗号分隔，例如：主线, 城市" />
+                </label>
+                <label class="wide">
+                  <span>优先级</span>
+                  <input id="priorityInput" name="priority" type="number" min="-9999" max="9999" step="1" value="50" />
+                  <small>数字越小越先注入，冲突时也更优先。</small>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section" data-section="trigger">
+              <legend>触发方式</legend>
+              <div class="form-grid">
+                <label class="wide">
+                  <span>关键词 / 触发器</span>
+                  <textarea id="keywordsInput" name="keywords" rows="3" maxlength="8500" placeholder="每行一个。普通文本按字面量匹配；正则请明确写为 re:&lt;表达式&gt;。"></textarea>
+                  <small>留空时仅由 Cron 触发。导入的上游条目会保留原有正则行为。</small>
+                </label>
+                <label>
+                  <span>关键词模式</span>
+                  <select id="keywordModeInput" name="keyword_mode">
+                    <option value="modern">字面量优先（推荐）</option>
+                    <option value="legacy_regex">兼容旧世界书：全部按正则</option>
+                  </select>
+                </label>
+                <label>
+                  <span>生效概率</span>
+                  <input id="probabilityInput" name="probability" type="number" min="0" max="1" step="0.01" value="1" />
+                  <small>1 表示每次命中都注入。</small>
+                </label>
+                <label class="wide">
+                  <span>Cron（分 时 日 月 周）</span>
+                  <input id="cronInput" name="cron" type="text" maxlength="128" placeholder="例如：0 9 * * 1-5" />
+                  <small>填写后按计划自动注入，与关键词可以同时使用。</small>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section" data-section="reach">
+              <legend>生效范围与时长</legend>
+              <div class="form-grid">
+                <label>
+                  <span>生效时长（秒）</span>
+                  <input id="durationInput" name="duration" type="number" min="0" max="31536000" step="1" value="180" />
+                  <small>0 表示触发后长期保持。</small>
+                </label>
+                <label>
+                  <span>最多注入次数</span>
+                  <input id="timesInput" name="times" type="number" min="0" max="1000000" step="1" value="5" />
+                  <small>0 表示不限次数。</small>
+                </label>
+                <label class="wide">
+                  <span>适用范围</span>
+                  <textarea id="scopeInput" name="scope" rows="2" maxlength="17000" placeholder="每行一个：admin、user:&lt;用户 ID&gt;、group:&lt;群 ID&gt; 或 session:&lt;UMO&gt;。留空代表不限。"></textarea>
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>注入内容</legend>
+              <div class="form-grid">
+                <label class="wide content-field">
+                  <span>正文 <em>必填</em></span>
+                  <textarea id="contentInput" name="content" rows="12" maxlength="50000" required placeholder="写入要让模型在触发时参考的设定、规则或背景。支持 {user_id}、{user_name}、{user}、{time}、{entry_name}。"></textarea>
+                </label>
+              </div>
+            </fieldset>
           </div>
+
           <p class="form-error" id="formError" role="alert" hidden></p>
           <footer class="drawer-footer">
-            <button class="button button-danger" id="deleteEntryButton" type="button" hidden>删除此条目</button>
+            <div class="drawer-footer-left">
+              <button class="button button-danger" id="deleteEntryButton" type="button" hidden>删除此条目</button>
+              <button class="button button-secondary button-compact" id="duplicateEntryButton" type="button" hidden>复制为新条目</button>
+            </div>
             <div class="drawer-footer-actions">
               <button class="button button-ghost" id="cancelEditorButton" type="button">取消</button>
               <button class="button button-primary" id="saveEntryButton" type="submit">保存条目</button>
@@ -273,10 +379,10 @@
           </div>
           <button class="icon-button" id="closeImportButton" type="button" aria-label="关闭导入窗口">×</button>
         </header>
-        <p>支持本插件导出的文件、上游 Worldbook 与常见的 JSON/YAML 世界书。单个文件最大 2 MiB。</p>
+        <p>支持本插件导出的文件、上游 Worldbook 与常见的 JSON / YAML 世界书，单个文件最大 2 MiB。</p>
         <label class="file-drop" for="importFileInput">
           <span aria-hidden="true">⇧</span>
-          <strong>选择 JSON / YAML 文件</strong>
+          <strong>点击选择，或把文件拖到这里</strong>
           <small id="importFileName">尚未选择文件</small>
           <input id="importFileInput" type="file" accept=".json,.yaml,.yml,application/json,application/x-yaml,text/yaml" />
         </label>

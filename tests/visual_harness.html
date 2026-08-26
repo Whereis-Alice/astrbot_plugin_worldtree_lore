@@ -8,34 +8,158 @@
   </head>
   <body>
     <script>
+      // Visual-only harness. It reimplements the backend contract of
+      // worldtree/library.py (search, status/template filters, the seven sort
+      // modes, stats and revision handling) so the production page code can be
+      // reviewed in a browser without running AstrBot.
       (() => {
+        const TEMPLATE_ORDER = ["common", "resident", "chance", "schedule", "group", "user"];
         const templates = [
-          {key: "common", label: "常规条目", defaults: {enabled: true, priority: 50, keywords: [], duration: 180, times: 5, probability: 1}},
-          {key: "resident", label: "常驻条目", defaults: {enabled: true, priority: 10, keywords: ["re:.*"], duration: 0, times: 0, probability: 1}},
-          {key: "chance", label: "随机条目", defaults: {enabled: true, priority: 30, keywords: ["re:.*"], duration: 180, times: 1, probability: .05}},
-          {key: "schedule", label: "日程条目", defaults: {enabled: true, priority: 80, keywords: [], cron: "0 9 * * 1-5", duration: 86400, times: 0, probability: 1}}
+          {key: "common", label: "常规条目", defaults: {enabled: true, priority: 50, keywords: [], keyword_mode: "modern", duration: 180, times: 5, probability: 1}},
+          {key: "resident", label: "常驻条目", defaults: {enabled: true, priority: 10, keywords: ["re:.*"], keyword_mode: "modern", duration: 0, times: 0, probability: 1}},
+          {key: "chance", label: "随机条目", defaults: {enabled: true, priority: 30, keywords: ["re:.*"], keyword_mode: "modern", duration: 180, times: 1, probability: 0.05}},
+          {key: "schedule", label: "日程条目", defaults: {enabled: true, priority: 80, keywords: [], keyword_mode: "modern", cron: "0 9 * * 1-5", duration: 86400, times: 0, probability: 1}},
+          {key: "group", label: "群聊限定条目", defaults: {enabled: true, priority: 60, keywords: [], keyword_mode: "modern", duration: 180, times: 5, probability: 1}},
+          {key: "user", label: "用户限定条目", defaults: {enabled: true, priority: 60, keywords: [], keyword_mode: "modern", duration: 180, times: 5, probability: 1}}
         ];
+
+        // Seconds-based epoch, matching WorldTreeEntry.updated_at.
+        const NOW = Math.floor(Date.now() / 1000);
+        const HOUR = 3600;
+        const DAY = 86400;
+        const longContent = "雾港是一座被盐雾与钟声包围的海港城，潮汐每天两次漫过低矮的石阶。" +
+          "城民相信退潮会带回被遗忘的名字，因此每逢大潮，码头上都会点起一排纸灯，" +
+          "让归来的名字有路可循。叙事时请强调湿冷的空气、远处的雾笛，以及居民对" +
+          "「名字」这件事近乎虔诚的态度；不要替玩家决定他们要不要相信这个传说。" +
+          "另外，雾港的钟楼每逢整点会敲响一次，退潮夜则敲三次；镇上的孩子把第三声" +
+          "叫作「回名钟」，据说听见的人当晚会梦到自己被谁呼唤。涉及夜间场景时可以" +
+          "顺手用上这条细节，让画面更冷、更潮湿，也更像一座真正靠海生活的城。";
+
+        const seed = [
+          {id: "root-1", name: "新芽的约定", content: "当前的冒险刚刚开始。请以温暖、好奇且不抢夺玩家选择权的方式回应。", enabled: true, priority: 5, keywords: ["冒险", "启程"], keyword_mode: "modern", scope: [], cron: "", duration: 0, times: 0, probability: 1, folder: "世界观", tags: ["主线", "基调"], template: "resident", updated_at: NOW - 2 * HOUR},
+          {id: "root-2", name: "雾港档案", content: longContent, enabled: true, priority: 40, keywords: ["雾港", "港口", "钟声"], keyword_mode: "modern", scope: [], cron: "", duration: 300, times: 5, probability: 1, folder: "地点", tags: ["城市", "主线"], template: "common", updated_at: NOW - 6 * HOUR},
+          {id: "root-3", name: "周一晨会", content: "今天是工作日。提醒用户列出最重要的一项待办，并保持回答简洁。", enabled: true, priority: 80, keywords: [], keyword_mode: "modern", scope: [], cron: "0 9 * * 1-5", duration: 3600, times: 0, probability: 1, folder: "日程", tags: ["工作"], template: "schedule", updated_at: NOW - 3 * DAY},
+          {id: "root-4", name: "旧码头彩蛋", content: "提到旧码头时，有 5% 的概率让路边的白猫叼来一枚锈迹斑斑的船票。", enabled: false, priority: 30, keywords: ["旧码头"], keyword_mode: "modern", scope: [], cron: "", duration: 180, times: 1, probability: 0.05, folder: "彩蛋", tags: ["随机", "猫"], template: "chance", updated_at: NOW - 9 * DAY},
+          {id: "root-5", name: "钟楼守夜人", content: "钟楼守夜人叫阿澪，沉默但记得每一位来客的脚步声。被问及往事时他只会敲一次钟。", enabled: true, priority: 45, keywords: ["守夜人", "阿澪", "钟楼"], keyword_mode: "modern", scope: [], cron: "", duration: 240, times: 4, probability: 1, folder: "人物", tags: ["NPC", "主线"], template: "common", updated_at: NOW - 40 * DAY},
+          {id: "root-6", name: "工会群规", content: "在该群内回应时使用简体中文、避免玩梗，并在结尾附一句当日安全提示。", enabled: true, priority: 65, keywords: [], keyword_mode: "modern", scope: ["group:906123"], cron: "", duration: 180, times: 5, probability: 1, folder: "群设置", tags: ["规范"], template: "group", updated_at: NOW - 20 * HOUR},
+          {id: "root-7", name: "阿澪的私聊语气", content: "与该用户私聊时称呼对方为「旅人」，语速放慢，多用短句。", enabled: true, priority: 62, keywords: [], keyword_mode: "modern", scope: ["user:10086"], cron: "", duration: 180, times: 5, probability: 1, folder: "", tags: ["语气"], template: "user", updated_at: NOW - 5 * DAY},
+          {id: "root-8", name: "潮汐历法", content: "一年分为四次大潮，分别称初汐、盛汐、残汐与静汐；静汐期间港口封闭。", enabled: true, priority: 20, keywords: ["历法", "潮汐", "季节"], keyword_mode: "legacy", scope: [], cron: "", duration: 0, times: 0, probability: 1, folder: "世界观", tags: ["设定"], template: "resident", updated_at: NOW - 12 * DAY},
+          {id: "root-9", name: "深夜雾笛", content: "深夜时段偶尔响起三短一长的雾笛，这是引路船靠岸的信号。", enabled: false, priority: 90, keywords: [], keyword_mode: "modern", scope: [], cron: "30 2 * * *", duration: 1800, times: 1, probability: 1, folder: "日程", tags: ["氛围"], template: "schedule", updated_at: NOW - 70 * DAY},
+          {id: "root-10", name: "盐渍面包摊", content: "集市东侧有一家盐渍面包摊，老板娘会用面包边跟人换街头消息。", enabled: true, priority: 120, keywords: ["面包", "集市"], keyword_mode: "modern", scope: [], cron: "", duration: 180, times: 3, probability: 0.4, folder: "地点", tags: ["日常", "随机"], template: "chance", updated_at: NOW - 30 * 60}
+        ];
+
+        // ?bulk=<n> pads the fixture with filler entries so pagination,
+        // grouping and scroll behaviour can be checked at realistic volumes.
+        const bulk = Math.max(0, Math.min(400, Number(new URLSearchParams(location.search).get("bulk") || 0)));
+        const filler = [];
+        const fillerTemplates = ["common", "resident", "chance", "schedule", "group", "user"];
+        const fillerFolders = ["地点", "人物", "世界观", "日程", "群设置", ""];
+        for (let i = 0; i < bulk; i += 1) {
+          const template = fillerTemplates[i % fillerTemplates.length];
+          filler.push({
+            id: "bulk-" + (i + 1),
+            name: "填充条目 " + String(i + 1).padStart(3, "0"),
+            content: "这是用于压力测试的填充条目 " + (i + 1) + "。内容仅用于占位。",
+            enabled: i % 7 !== 0,
+            priority: ((i * 13) % 140) + 1,
+            keywords: i % 3 === 0 ? ["填充", "测试"] : [],
+            keyword_mode: "modern",
+            scope: template === "group" ? ["group:900" + i] : template === "user" ? ["user:800" + i] : [],
+            cron: template === "schedule" ? "0 " + (i % 24) + " * * *" : "",
+            duration: 180,
+            times: 5,
+            probability: template === "chance" ? 0.25 : 1,
+            folder: fillerFolders[i % fillerFolders.length],
+            tags: i % 2 === 0 ? ["填充"] : [],
+            template,
+            updated_at: NOW - (i + 1) * HOUR
+          });
+        }
+
         let revision = 7;
-        let nextId = 5;
-        let entries = [
-          {id: "root-1", name: "新芽的约定", content: "当前的冒险刚刚开始。请以温暖、好奇且不抢夺玩家选择权的方式回应。", enabled: true, priority: 10, keywords: ["冒险", "启程"], keyword_mode: "modern", scope: [], cron: "", duration: 0, times: 0, probability: 1, folder: "世界观", tags: ["主线", "基调"], template: "resident", created_at: 1, updated_at: 1},
-          {id: "root-2", name: "雾港档案", content: "雾港是一座被盐雾和钟声包围的海港城。城民相信潮汐会带回失去的名字。", enabled: true, priority: 40, keywords: ["雾港", "港口", "钟声"], keyword_mode: "modern", scope: [], cron: "", duration: 300, times: 5, probability: 1, folder: "地点", tags: ["城市", "主线"], template: "common", created_at: 1, updated_at: 1},
-          {id: "root-3", name: "周一晨会", content: "今天是工作日。提醒用户列出最重要的一项待办，并保持回答简洁。", enabled: true, priority: 80, keywords: [], keyword_mode: "modern", scope: [], cron: "0 9 * * 1-5", duration: 3600, times: 0, probability: 1, folder: "日程", tags: ["工作"], template: "schedule", created_at: 1, updated_at: 1},
-          {id: "root-4", name: "旧码头彩蛋", content: "提到旧码头时，有 5% 的概率让路边的白猫叼来一枚锈迹斑斑的船票。", enabled: false, priority: 30, keywords: ["旧码头"], keyword_mode: "modern", scope: [], cron: "", duration: 180, times: 1, probability: .05, folder: "彩蛋", tags: ["随机", "猫"], template: "chance", created_at: 1, updated_at: 1}
-        ];
+        let nextId = 11;
+        let entries = seed.concat(filler).map((entry) => ({...entry, created_at: entry.updated_at}));
+
         const clone = (value) => JSON.parse(JSON.stringify(value));
-        const summary = (entry) => ({...clone(entry), preview: entry.content.length > 180 ? entry.content.slice(0, 179) + "…" : entry.content});
-        const stats = () => ({total: entries.length, enabled: entries.filter((entry) => entry.enabled).length, disabled: entries.filter((entry) => !entry.enabled).length, folders: new Set(entries.map((entry) => entry.folder).filter(Boolean)).size, tags: new Set(entries.flatMap((entry) => entry.tags)).size, scheduled: entries.filter((entry) => entry.cron).length});
-        const facets = () => ({folders: [...new Set(entries.map((entry) => entry.folder).filter(Boolean))], tags: [...new Set(entries.flatMap((entry) => entry.tags))]});
-        const touch = () => ++revision;
-        const filtered = (params) => entries.filter((entry) => {
-          const query = (params.q || "").trim().toLowerCase();
-          const haystack = [entry.name, entry.content, entry.folder, ...entry.tags, ...entry.keywords].join(" ").toLowerCase();
-          return (!query || query.split(/\s+/).every((word) => haystack.includes(word))) &&
-            (params.status === "enabled" ? entry.enabled : params.status === "disabled" ? !entry.enabled : true) &&
-            (!params.folder || params.folder === entry.folder) && (!params.tag || entry.tags.includes(params.tag));
+        const summary = (entry) => ({
+          ...clone(entry),
+          preview: entry.content.length > 180 ? entry.content.slice(0, 179) + "…" : entry.content
         });
+        const touch = () => ++revision;
+        const fold = (value) => String(value || "").toLowerCase();
+
+        const stats = () => ({
+          total: entries.length,
+          enabled: entries.filter((entry) => entry.enabled).length,
+          disabled: entries.filter((entry) => !entry.enabled).length,
+          folders: new Set(entries.map((entry) => entry.folder).filter(Boolean)).size,
+          tags: new Set(entries.flatMap((entry) => entry.tags)).size,
+          scheduled: entries.filter((entry) => Boolean(entry.cron)).length,
+          scoped: entries.filter((entry) => entry.scope.length > 0).length
+        });
+
+        const facets = () => ({
+          folders: [...new Set(entries.map((entry) => entry.folder).filter(Boolean))].sort((a, b) => a.localeCompare(b, "zh-CN")),
+          tags: [...new Set(entries.flatMap((entry) => entry.tags))].sort((a, b) => a.localeCompare(b, "zh-CN"))
+        });
+
+        // Mirror of library.entry_sort_key: each mode returns a tuple-like array
+        // of homogeneous parts so comparison never mixes numbers with strings.
+        const sortKey = (entry, mode) => {
+          const name = fold(entry.name);
+          const folder = fold(entry.folder);
+          if (mode === "priority_desc") return [-entry.priority, folder, name, entry.id];
+          if (mode === "template") {
+            const order = TEMPLATE_ORDER.indexOf(entry.template);
+            return [order < 0 ? TEMPLATE_ORDER.length : order, entry.priority, name, entry.id];
+          }
+          if (mode === "name") return [name, entry.id];
+          if (mode === "folder") return [folder ? 0 : 1, folder, entry.priority, name];
+          if (mode === "updated") return [-Number(entry.updated_at || 0), name, entry.id];
+          if (mode === "enabled") return [entry.enabled ? 0 : 1, entry.priority, name, entry.id];
+          return [entry.priority, folder, name, entry.id];
+        };
+
+        const compare = (left, right) => {
+          for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+            const a = left[index];
+            const b = right[index];
+            if (a === b) continue;
+            if (typeof a === "number" && typeof b === "number") return a - b;
+            return String(a).localeCompare(String(b), "zh-CN");
+          }
+          return 0;
+        };
+
+        const SORT_MODES = ["priority", "priority_desc", "template", "name", "folder", "updated", "enabled"];
+        const STATUS_FILTERS = ["all", "enabled", "disabled", "scheduled", "scoped"];
+
+        const filtered = (params) => {
+          const status = params.status || "all";
+          if (!STATUS_FILTERS.includes(status)) throw new Error("状态筛选不受支持：" + status);
+          const wantedTemplate = fold(params.template);
+          if (wantedTemplate && !TEMPLATE_ORDER.includes(wantedTemplate)) {
+            throw new Error("未知的条目模板：" + params.template);
+          }
+          const words = String(params.q || "").trim().toLowerCase().split(/\s+/).filter(Boolean);
+          const wantedFolder = fold(params.folder);
+          const wantedTag = fold(params.tag);
+          return entries.filter((entry) => {
+            if (status === "enabled" && !entry.enabled) return false;
+            if (status === "disabled" && entry.enabled) return false;
+            if (status === "scheduled" && !entry.cron) return false;
+            if (status === "scoped" && entry.scope.length === 0) return false;
+            if (wantedTemplate && entry.template !== wantedTemplate) return false;
+            if (wantedFolder && fold(entry.folder) !== wantedFolder) return false;
+            if (wantedTag && !entry.tags.some((tag) => fold(tag) === wantedTag)) return false;
+            if (!words.length) return true;
+            const haystack = [entry.name, entry.content, entry.folder, entry.tags.join(" "), entry.keywords.join(" "), entry.scope.join(" ")].join("\n").toLowerCase();
+            return words.every((word) => haystack.includes(word));
+          });
+        };
+
         const visualParams = new URLSearchParams(window.location.search);
+
         window.AstrBotPluginPage = {
           ready: async () => ({locale: "zh-CN", isDark: visualParams.get("theme") === "dark"}),
           getLocale: () => "zh-CN",
@@ -43,24 +167,78 @@
           onContext: () => () => {},
           apiGet: async (endpoint, params = {}) => {
             if (endpoint === "entries") {
-              const items = filtered(params).sort((a, b) => a.priority - b.priority || a.name.localeCompare(b.name, "zh-CN"));
-              const size = Number(params.page_size || 30); const requested = Number(params.page || 1); const pages = Math.max(1, Math.ceil(items.length / size)); const page = Math.min(Math.max(1, requested), pages);
-              return {revision, entries: items.slice((page - 1) * size, page * size).map(summary), pagination: {page, page_size: size, total: items.length, total_pages: pages}, facets: facets(), stats: stats(), templates: clone(templates)};
+              const sort = params.sort || "priority";
+              if (!SORT_MODES.includes(sort)) throw new Error("未知的排序方式：" + sort);
+              const items = filtered(params).slice().sort((a, b) => compare(sortKey(a, sort), sortKey(b, sort)));
+              const size = Number(params.page_size || 30);
+              const pages = Math.max(1, Math.ceil(items.length / size));
+              const page = Math.min(Math.max(1, Number(params.page || 1)), pages);
+              return {
+                revision,
+                entries: items.slice((page - 1) * size, page * size).map(summary),
+                pagination: {page, page_size: size, total: items.length, total_pages: pages, sort},
+                facets: facets(),
+                stats: stats(),
+                templates: clone(templates)
+              };
             }
             if (endpoint === "diagnostics") return {revision, stats: stats(), invalid_cron_entries: {}};
             if (endpoint.startsWith("entry/")) {
-              const id = endpoint.split("/")[1]; const entry = entries.find((item) => item.id === id); if (!entry) throw new Error("找不到该条目"); return {revision, entry: clone(entry), templates: clone(templates)};
+              const entry = entries.find((item) => item.id === endpoint.split("/")[1]);
+              if (!entry) throw new Error("找不到该条目");
+              return {revision, entry: clone(entry), templates: clone(templates)};
             }
             throw new Error("未找到模拟接口");
           },
           apiPost: async (endpoint, payload) => {
-            if (payload.revision !== revision) throw new Error("条目库已被其他操作更新。请刷新列表后再保存，避免覆盖新修改。");
-            if (endpoint === "entry/create") { const entry = {...clone(payload.entry), id: `new-${nextId++}`, created_at: Date.now(), updated_at: Date.now()}; entries.push(entry); touch(); return {revision, entry: clone(entry)}; }
-            if (endpoint === "entries/bulk") { let changed = entries.filter((entry) => payload.entry_ids.includes(entry.id)); if (payload.action === "delete") entries = entries.filter((entry) => !payload.entry_ids.includes(entry.id)); else changed.forEach((entry) => { if (payload.action === "set_enabled") entry.enabled = payload.value; if (payload.action === "set_folder") entry.folder = payload.value; if (payload.action === "add_tag" && !entry.tags.includes(payload.value)) entry.tags.push(payload.value); if (payload.action === "remove_tag") entry.tags = entry.tags.filter((tag) => tag !== payload.value); }); touch(); return {revision, changed: changed.map((entry) => entry.id), missing: []}; }
-            const parts = endpoint.split("/"); const id = parts[1]; const action = parts[2]; const entry = entries.find((item) => item.id === id); if (!entry) throw new Error("找不到该条目"); if (action === "toggle") entry.enabled = payload.enabled; if (action === "save") Object.assign(entry, clone(payload.entry)); if (action === "delete") entries = entries.filter((item) => item.id !== id); touch(); return action === "delete" ? {revision, deleted: summary(entry)} : {revision, entry: summary(entry)};
+            if (payload.revision !== revision) {
+              throw new Error("条目库已被其他操作更新。请刷新列表后再保存，避免覆盖新修改。");
+            }
+            if (endpoint === "entry/create") {
+              const entry = {...clone(payload.entry), id: "new-" + nextId++, created_at: NOW, updated_at: NOW};
+              entries.push(entry);
+              touch();
+              return {revision, entry: clone(entry)};
+            }
+            if (endpoint === "entries/bulk") {
+              const changed = entries.filter((entry) => payload.entry_ids.includes(entry.id));
+              if (payload.action === "delete") {
+                entries = entries.filter((entry) => !payload.entry_ids.includes(entry.id));
+              } else {
+                changed.forEach((entry) => {
+                  if (payload.action === "set_enabled") entry.enabled = payload.value;
+                  if (payload.action === "set_folder") entry.folder = payload.value;
+                  if (payload.action === "add_tag" && !entry.tags.includes(payload.value)) entry.tags.push(payload.value);
+                  if (payload.action === "remove_tag") entry.tags = entry.tags.filter((tag) => tag !== payload.value);
+                  entry.updated_at = NOW;
+                });
+              }
+              touch();
+              return {revision, changed: changed.map((entry) => entry.id), missing: []};
+            }
+            const parts = endpoint.split("/");
+            const id = parts[1];
+            const action = parts[2];
+            const entry = entries.find((item) => item.id === id);
+            if (!entry) throw new Error("找不到该条目");
+            if (action === "duplicate") {
+              const copy = {...clone(entry), id: "new-" + nextId++, name: entry.name.slice(0, 76) + " 副本", created_at: NOW, updated_at: NOW};
+              entries.push(copy);
+              touch();
+              return {revision, entry: summary(copy)};
+            }
+            if (action === "toggle") entry.enabled = payload.enabled;
+            if (action === "save") Object.assign(entry, clone(payload.entry));
+            if (action === "delete") entries = entries.filter((item) => item.id !== id);
+            if (action !== "delete") entry.updated_at = NOW;
+            touch();
+            return action === "delete" ? {revision, deleted: summary(entry)} : {revision, entry: summary(entry)};
           },
-          upload: async (_endpoint, _file) => ({revision, report: {added: 0, replaced: 0, renamed: 0, skipped: 0, invalid: 0, messages: ["视觉测试：未写入真实文件"]}}),
-          download: async () => ({filename: "visual-test.yaml"})
+          upload: async () => ({revision, report: {added: 0, replaced: 0, renamed: 0, skipped: 0, invalid: 0, messages: ["视觉测试：未写入真实文件"]}}),
+          download: async (_endpoint, params = {}) => {
+            const count = params.ids ? String(params.ids).split(",").filter(Boolean).length : entries.length;
+            return {filename: "visual-test-" + count + "." + (params.format || "yaml")};
+          }
         };
       })();
     </script>
