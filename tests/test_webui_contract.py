@@ -135,6 +135,53 @@ class WebUiContractTests(unittest.TestCase):
         self.assertIn(".theme-switch {", styles)
         self.assertIn("@keyframes glimmer", styles)
 
+    def test_editor_explains_what_each_template_preset_did(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        # Templates only seed fields, so the editor keeps every control visible
+        # and explains the preset instead of hiding the trigger section.
+        self.assertIn('id="templateHint"', markup)
+        self.assertIn('id="triggerNote"', markup)
+        self.assertIn('id="keywordWarning"', markup)
+        self.assertIn('id="applyTemplateDefaultsButton"', markup)
+        self.assertIn("const TEMPLATE_NOTES = {", script)
+        for key in ("common", "resident", "chance", "schedule", "group", "user"):
+            self.assertIn(f"  {key}: {{", script)
+        self.assertIn("DEFAULT_TRIGGER_NOTE", script)
+        self.assertIn("function updateEditorGuidance()", script)
+        self.assertIn("function updateKeywordWarning()", script)
+        self.assertIn("REGEX_LOOKALIKE", script)
+        self.assertIn('confirmLabel: "套用默认值"', script)
+        self.assertIn(".field-note {", styles)
+        self.assertIn("small.field-warning {", styles)
+
+    def test_confirm_dialog_separates_deletions_from_routine_changes(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+
+        # Reusing the red "permanent delete" dialog for a reversible field reset
+        # trains people to dismiss it, so the tone is swapped instead.
+        self.assertIn('id="confirmEyebrow"', markup)
+        self.assertIn('id="confirmGlyph"', markup)
+        self.assertIn('data-tone="prune"', markup)
+        self.assertIn("const CONFIRM_TONES = {", script)
+        self.assertIn("  prune: {", script)
+        self.assertIn("  graft: {", script)
+        self.assertIn('tone: "graft"', script)
+        self.assertIn("refs.cancelConfirm.textContent = cancelLabel", script)
+        self.assertIn('.confirm-dialog[data-tone="graft"] {', styles)
+
     def test_dark_overrides_also_cover_the_nightglow_theme(self) -> None:
         styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
             encoding="utf-8"

@@ -60,6 +60,10 @@ const refs = {
   times: $("#timesInput"),
   keywords: $("#keywordsInput"),
   keywordMode: $("#keywordModeInput"),
+  keywordWarning: $("#keywordWarning"),
+  templateHint: $("#templateHint"),
+  triggerNote: $("#triggerNote"),
+  applyTemplateDefaults: $("#applyTemplateDefaultsButton"),
   cron: $("#cronInput"),
   scope: $("#scopeInput"),
   content: $("#contentInput"),
@@ -76,6 +80,8 @@ const refs = {
   confirmTitle: $("#confirmTitle"),
   confirmMessage: $("#confirmMessage"),
   confirmHint: $("#confirmHint"),
+  confirmEyebrow: $("#confirmEyebrow"),
+  confirmGlyph: $("#confirmGlyph"),
   cancelConfirm: $("#cancelConfirmButton"),
   acceptConfirm: $("#acceptConfirmButton"),
   toastRegion: $("#toastRegion"),
@@ -217,12 +223,27 @@ function settleConfirmation(confirmed) {
   if (resolve) resolve(Boolean(confirmed));
 }
 
-function requestConfirmation({ title, message, hint, confirmLabel = "确认" }) {
+// Deletions must look alarming; routine edits must not. Each tone swaps the
+// dialog's accent, glyph, eyebrow and default cancel wording together, so a
+// reversible change never borrows the red "permanent delete" styling.
+const CONFIRM_TONES = {
+  prune: { eyebrow: "PRUNE BRANCH", glyph: "!", cancelLabel: "保留条目", danger: true },
+  graft: { eyebrow: "GRAFT BRANCH", glyph: "\u21bb", cancelLabel: "保持不变", danger: false },
+};
+
+function requestConfirmation({ title, message, hint, confirmLabel = "确认", cancelLabel = "", tone = "prune" }) {
   if (confirmationResolver) settleConfirmation(false);
+  const spec = CONFIRM_TONES[tone] || CONFIRM_TONES.prune;
+  refs.confirmDialog.dataset.tone = CONFIRM_TONES[tone] ? tone : "prune";
+  refs.confirmEyebrow.textContent = spec.eyebrow;
+  refs.confirmGlyph.textContent = spec.glyph;
   refs.confirmTitle.textContent = title;
   refs.confirmMessage.textContent = message;
   refs.confirmHint.textContent = hint;
   refs.acceptConfirm.textContent = confirmLabel;
+  refs.acceptConfirm.classList.toggle("button-danger", spec.danger);
+  refs.acceptConfirm.classList.toggle("button-primary", !spec.danger);
+  refs.cancelConfirm.textContent = cancelLabel || spec.cancelLabel;
 
   return new Promise((resolve) => {
     confirmationResolver = resolve;
@@ -856,6 +877,8 @@ function setFormValues(entry) {
   refs.cron.value = entry.cron || "";
   refs.scope.value = (entry.scope || []).join("\n");
   refs.content.value = entry.content || "";
+  updateEditorGuidance();
+  updateKeywordWarning();
 }
 
 function newEntry() {
@@ -899,10 +922,41 @@ async function openEditor(entryId) {
   }
 }
 
-function applySelectedTemplate() {
-  if (state.editingId) return;
+// Templates are presets plus a classification tag, not separate engines: every
+// entry shares the same fields, so instead of hiding controls we explain what a
+// preset already did. Keys mirror ENTRY_TEMPLATES in worldtree/models.py.
+const TEMPLATE_NOTES = {
+  common: {
+    template: "常规条目：优先级 50，命中后生效 180 秒、最多 5 次，靠关键词触发。",
+    trigger: "一行一个关键词。普通文本按字面量匹配，正则要显式写成 re:<表达式>。",
+  },
+  resident: {
+    template: "常驻条目：预设关键词 re:.*（命中任意消息）+ 生效时长 0（不过期）+ 次数 0（不限），常驻效果就是这样拼出来的。",
+    trigger: "常驻正是靠这里的 re:.* 实现的——清空关键词后条目就再也不会触发。想收窄范围可改成具体词，或配合下方「适用范围」。",
+  },
+  chance: {
+    template: "随机条目：同样用 re:.* 命中任意消息，再由 5% 的生效概率决定这次是否真的注入。",
+    trigger: "关键词决定“什么时候有机会”，生效概率决定“这次算不算数”，最终触发率是两者相乘。",
+  },
+  schedule: {
+    template: "日程条目：关键词留空，Cron 预设每天 0 点，靠时间而不是聊天内容触发。",
+    trigger: "Cron 是这类条目的主触发器；关键词留空即纯定时，补上关键词后还能被聊到时唤醒。",
+  },
+  group: {
+    template: "群聊限定条目：预设 re:.* 常驻，还要在「适用范围」里填 group:<群 ID> 才真正限定群。",
+    trigger: "这里只管“何时触发”，限定哪个群要在下方「适用范围」里写 group:<群 ID>，两个条件都满足才会注入。",
+  },
+  user: {
+    template: "用户限定条目：预设 re:.* 常驻，还要在「适用范围」里填 user:<用户 ID> 才真正限定人。",
+    trigger: "这里只管“何时触发”，限定对谁生效要在下方「适用范围」里写 user:<用户 ID>，两个条件都满足才会注入。",
+  },
+};
+const DEFAULT_TRIGGER_NOTE = "关键词命中或 Cron 到点，任意一个满足即触发；两者都留空的条目永远不会注入。";
+const REGEX_LOOKALIKE = /^(?:\*|\.|\.\*\??|\.\+\??|\^\.\*\$|\\[dws]\+?|\[[^\]]*\]\+?)$/i;
+
+function applyTemplateDefaults() {
   const template = templateFor(refs.template.value);
-  if (!template) return;
+  if (!template) return null;
   const defaults = template.defaults || {};
   refs.enabled.checked = defaults.enabled ?? true;
   refs.priority.value = defaults.priority ?? 50;
@@ -910,7 +964,62 @@ function applySelectedTemplate() {
   refs.duration.value = defaults.duration ?? 180;
   refs.times.value = defaults.times ?? 5;
   refs.keywords.value = (defaults.keywords || []).join("\n");
+  refs.keywordMode.value = defaults.keyword_mode || "modern";
   refs.cron.value = defaults.cron || "";
+  return template;
+}
+
+// While creating an entry the template acts as a preset, so switching it may
+// rewrite the trigger fields. While editing we never silently overwrite what is
+// already written; the explicit "apply defaults" button does that instead.
+function applySelectedTemplate() {
+  if (!state.editingId) applyTemplateDefaults();
+  updateEditorGuidance();
+  updateKeywordWarning();
+}
+
+async function applyTemplateDefaultsFromButton() {
+  const template = templateFor(refs.template.value);
+  if (!template) return;
+  const confirmed = await requestConfirmation({
+    title: "套用模板默认值",
+    message: `将用「${template.label}」的预设覆盖触发方式、优先级、生效时长与次数。`,
+    hint: "名称、注入内容、文件夹、标签与适用范围不受影响。",
+    confirmLabel: "套用默认值",
+    tone: "graft",
+  });
+  if (!confirmed) return;
+  applyTemplateDefaults();
+  updateKeywordWarning();
+  showToast(`已套用「${template.label}」默认值`, "success");
+}
+
+function updateEditorGuidance() {
+  const note = TEMPLATE_NOTES[refs.template.value];
+  const editing = Boolean(state.editingId);
+  const lines = [];
+  if (note?.template) lines.push(note.template);
+  if (editing) lines.push("切换模板只改变分类，不会覆盖已填字段。");
+  refs.templateHint.textContent = lines.join(" ");
+  refs.applyTemplateDefaults.hidden = !editing;
+  refs.triggerNote.textContent = note?.trigger || DEFAULT_TRIGGER_NOTE;
+}
+
+// `.*` or `*` only behaves as a regex when it carries the `re:` prefix (or when
+// the entry runs in legacy regex mode). Without it the text is matched literally,
+// which quietly turns "match everything" into "match a literal asterisk".
+function updateKeywordWarning() {
+  const legacy = refs.keywordMode.value === "legacy_regex";
+  const suspicious = legacy
+    ? []
+    : refs.keywords.value
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line && !line.toLowerCase().startsWith("re:") && REGEX_LOOKALIKE.test(line));
+  refs.keywordWarning.hidden = suspicious.length === 0;
+  refs.keywordWarning.textContent = suspicious.length
+    ? `「${suspicious[0]}」在字面量优先模式下只会匹配这几个字符本身。想命中任意消息请写成 re:.*，或把关键词模式切到「兼容旧世界书」。`
+    : "";
 }
 
 function formPayload() {
@@ -1262,6 +1371,9 @@ function bindEvents() {
     }
   });
   refs.template.addEventListener("change", applySelectedTemplate);
+  refs.applyTemplateDefaults.addEventListener("click", applyTemplateDefaultsFromButton);
+  refs.keywords.addEventListener("input", updateKeywordWarning);
+  refs.keywordMode.addEventListener("change", updateKeywordWarning);
   refs.importButton.addEventListener("click", openImportDialog);
   refs.closeImport.addEventListener("click", closeImportDialog);
   refs.cancelImport.addEventListener("click", closeImportDialog);

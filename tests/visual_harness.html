@@ -25,9 +25,9 @@
           {key: "common", label: "常规条目", defaults: {enabled: true, priority: 50, keywords: [], keyword_mode: "modern", duration: 180, times: 5, probability: 1}},
           {key: "resident", label: "常驻条目", defaults: {enabled: true, priority: 10, keywords: ["re:.*"], keyword_mode: "modern", duration: 0, times: 0, probability: 1}},
           {key: "chance", label: "随机条目", defaults: {enabled: true, priority: 30, keywords: ["re:.*"], keyword_mode: "modern", duration: 180, times: 1, probability: 0.05}},
-          {key: "schedule", label: "日程条目", defaults: {enabled: true, priority: 80, keywords: [], keyword_mode: "modern", cron: "0 9 * * 1-5", duration: 86400, times: 0, probability: 1}},
-          {key: "group", label: "群聊限定条目", defaults: {enabled: true, priority: 60, keywords: [], keyword_mode: "modern", duration: 180, times: 5, probability: 1}},
-          {key: "user", label: "用户限定条目", defaults: {enabled: true, priority: 60, keywords: [], keyword_mode: "modern", duration: 180, times: 5, probability: 1}}
+          {key: "schedule", label: "日程条目", defaults: {enabled: true, priority: 80, keywords: [], keyword_mode: "modern", cron: "0 0 * * *", duration: 86400, times: 0, probability: 1}},
+          {key: "group", label: "群聊限定条目", defaults: {enabled: true, priority: 120, keywords: ["re:.*"], keyword_mode: "modern", duration: 0, times: 0, probability: 1}},
+          {key: "user", label: "用户限定条目", defaults: {enabled: true, priority: 150, keywords: ["re:.*"], keyword_mode: "modern", duration: 0, times: 0, probability: 1}}
         ];
 
         // Seconds-based epoch, matching WorldTreeEntry.updated_at.
@@ -295,16 +295,39 @@
       } finally {
         URL.revokeObjectURL(moduleUrl);
       }
-    </script>
-  </body>
-</html>
-uleUrl = URL.createObjectURL(
-        new Blob([await scriptResponse.text()], {type: "text/javascript"}),
-      );
-      try {
-        await import(moduleUrl);
-      } finally {
-        URL.revokeObjectURL(moduleUrl);
+
+      // ?editor=<template key> opens a fresh entry with that preset selected and
+      // ?editor=entry:<id> opens an existing entry, so the drawer's contextual
+      // guidance can be reviewed without clicking through the page by hand.
+      const editorParam = new URLSearchParams(location.search).get("editor");
+      if (editorParam) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        if (editorParam.startsWith("entry:")) {
+          const id = editorParam.slice(6);
+          const target = document.querySelector(`.entry-card[data-entry-id="${id}"] .entry-open`)
+            || document.querySelector(".entry-card .entry-open");
+          target.click();
+        } else {
+          document.querySelector("#newEntryButton").click();
+          const select = document.querySelector("#templateInput");
+          select.value = editorParam;
+          select.dispatchEvent(new Event("change", {bubbles: true}));
+        }
+        // ?keywords=<text> also fills the keyword box so the "this is not a
+        // regex" reminder can be reviewed in the same pass.
+        const keywords = new URLSearchParams(location.search).get("keywords");
+        if (keywords !== null) {
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          const box = document.querySelector("#keywordsInput");
+          box.value = keywords;
+          box.dispatchEvent(new Event("input", {bubbles: true}));
+        }
+        // ?apply=1 clicks "套用该模板默认值" so the confirmation dialog can be
+        // reviewed in the same screenshot pass.
+        if (new URLSearchParams(location.search).get("apply") === "1") {
+          await new Promise((resolve) => setTimeout(resolve, 120));
+          document.querySelector("#applyTemplateDefaultsButton").click();
+        }
       }
     </script>
   </body>

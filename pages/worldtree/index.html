@@ -301,6 +301,10 @@
                   <input id="enabledInput" name="enabled" type="checkbox" checked />
                   <i aria-hidden="true"></i>
                 </label>
+                <p class="wide field-note" id="templateNote">
+                  <span id="templateHint"></span>
+                  <button class="text-button" id="applyTemplateDefaultsButton" type="button" hidden>套用该模板默认值</button>
+                </p>
                 <label class="wide">
                   <span>名称 <em>必填</em></span>
                   <input id="nameInput" name="name" type="text" maxlength="80" required placeholder="例如：冒险者公会" />
@@ -323,11 +327,13 @@
 
             <fieldset class="form-section" data-section="trigger">
               <legend>触发方式</legend>
+              <p class="field-note" id="triggerNote"></p>
               <div class="form-grid">
                 <label class="wide">
                   <span>关键词 / 触发器</span>
                   <textarea id="keywordsInput" name="keywords" rows="3" maxlength="8500" placeholder="每行一个。普通文本按字面量匹配；正则请明确写为 re:&lt;表达式&gt;。"></textarea>
                   <small>留空时仅由 Cron 触发。导入的上游条目会保留原有正则行为。</small>
+                  <small class="field-warning" id="keywordWarning" hidden></small>
                 </label>
                 <label>
                   <span>关键词模式</span>
@@ -398,15 +404,16 @@
     <dialog
       class="confirm-dialog"
       id="confirmDialog"
+      data-tone="prune"
       aria-labelledby="confirmTitle"
       aria-describedby="confirmMessage confirmHint"
     >
       <div class="confirm-dialog-card">
         <div class="confirm-dialog-accent" aria-hidden="true"></div>
         <div class="confirm-dialog-body">
-          <div class="confirm-dialog-symbol" aria-hidden="true"><span>!</span></div>
+          <div class="confirm-dialog-symbol" aria-hidden="true"><span id="confirmGlyph">!</span></div>
           <div class="confirm-dialog-copy">
-            <p class="eyebrow">PRUNE BRANCH</p>
+            <p class="eyebrow" id="confirmEyebrow">PRUNE BRANCH</p>
             <h2 id="confirmTitle">确认删除？</h2>
             <p id="confirmMessage">所选条目将被永久删除。</p>
             <p class="confirm-dialog-hint" id="confirmHint">此操作无法在管理台内撤销。</p>
