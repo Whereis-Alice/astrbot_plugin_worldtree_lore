@@ -405,7 +405,7 @@ kbd {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(230px, 282px) minmax(0, 1fr);
+  grid-template-columns: minmax(248px, 302px) minmax(0, 1fr);
   gap: 28px;
   align-items: start;
 }
@@ -414,7 +414,39 @@ kbd {
   position: sticky;
   top: 14px;
   display: grid;
-  gap: 18px;
+  gap: 16px;
+  padding-left: 26px;
+}
+
+/* the sidebar grows on its own trunk, echoing the entry tree to its right */
+.sidebar::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 3px;
+  bottom: 28px;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--forest-400) 65%, transparent),
+    var(--forest-600) 32%,
+    var(--forest-800)
+  );
+  opacity: .8;
+}
+
+/* root flare where the trunk meets the foot of the column */
+.sidebar::after {
+  content: "";
+  position: absolute;
+  left: -11px;
+  bottom: 10px;
+  width: 46px;
+  height: 18px;
+  border-top: 2px solid color-mix(in srgb, var(--forest-700) 42%, transparent);
+  border-radius: 50% 50% 0 0;
+  opacity: .5;
 }
 
 .mobile-filter-toggle { display: none; }
@@ -422,25 +454,40 @@ kbd {
 .canopy-card,
 .filter-section,
 .sidebar-actions {
-  padding: 17px;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--paper-strong) 88%, transparent);
   box-shadow: 0 9px 28px rgb(19 72 45 / 5%);
 }
 
-.canopy-card { position: relative; overflow: hidden; }
+.canopy-card { position: relative; }
 
-.canopy-card::before {
+/* every panel is a bough: a twig off the trunk plus a bud at the joint */
+.bough-node { position: relative; }
+
+.bough-node::before {
   content: "";
   position: absolute;
-  top: -46px;
-  right: -34px;
-  width: 116px;
-  height: 116px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--forest-400) 22%, transparent), transparent 68%);
-  pointer-events: none;
+  left: -18px;
+  top: 25px;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--forest-700), color-mix(in srgb, var(--forest-400) 55%, transparent));
+}
+
+.bough-node::after {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 20px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--forest-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--paper) 82%, transparent);
+  transform: rotate(-45deg);
 }
 
 .card-head {
@@ -448,7 +495,7 @@ kbd {
   position: relative;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 13px;
   font-weight: 800;
 }
 
@@ -466,50 +513,102 @@ kbd {
   transform: rotate(-45deg);
 }
 
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* --- canopy overview: one trunk ring plus a spray of leaf chips --------- */
+
+.canopy { display: grid; gap: 10px; }
+
+.canopy-total {
+  display: flex;
+  position: relative;
   overflow: hidden;
+  align-items: baseline;
+  gap: 9px;
+  padding: 13px 15px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-}
-
-.stat {
-  display: block;
-  min-height: 66px;
-  padding: 10px;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(145deg, var(--paper-strong), var(--moss));
-  text-align: left;
-}
-
-.stat:nth-child(2n) { border-right: 0; }
-.stat:nth-last-child(-n+2) { border-bottom: 0; }
-
-.stat strong {
-  display: block;
+  border-radius: 15px;
   color: var(--forest-800);
-  font-size: 1.16rem;
-}
-
-.stat span {
-  color: var(--muted);
-  font-size: .72rem;
-}
-
-.stat-action {
-  border-top: 0;
-  border-left: 0;
+  background:
+    radial-gradient(120% 160% at 86% 0%, color-mix(in srgb, var(--forest-400) 20%, transparent), transparent 62%),
+    linear-gradient(145deg, var(--paper-strong), var(--moss));
   font: inherit;
-  transition: background .16s ease;
+  text-align: left;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
 
-.stat-action:hover { background: linear-gradient(145deg, var(--moss), var(--paper-strong)); }
+.canopy-total strong {
+  font-size: 1.72rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  line-height: 1;
+}
 
-.stat-action.is-active { background: linear-gradient(145deg, var(--forest-600), var(--forest-700)); }
-.stat-action.is-active strong,
-.stat-action.is-active span { color: #fff; }
+.canopy-total span {
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+/* growth rings, so the total reads as a slice through the trunk */
+.canopy-rings {
+  position: absolute;
+  top: 50%;
+  right: -26px;
+  width: 96px;
+  height: 96px;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at center,
+    transparent 0 6px,
+    color-mix(in srgb, var(--forest-600) 26%, transparent) 6px 7.5px
+  );
+  opacity: .75;
+  pointer-events: none;
+}
+
+.canopy-total:not(.is-active):hover { border-color: var(--forest-400); }
+
+/* "all" is the resting filter, so selection is a ring rather than a dark fill */
+.canopy-total.is-active {
+  border-color: var(--forest-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest-400) 20%, transparent);
+}
+
+.canopy-total.is-active span { color: var(--forest-700); }
+
+.leaf-row { display: flex; flex-wrap: wrap; gap: 7px; }
+
+.leaf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px 6px 10px;
+  border: 1px solid var(--line);
+  /* one squared corner turns the pill into a leaf silhouette */
+  border-radius: 13px 13px 13px 4px;
+  color: var(--forest-800);
+  background: color-mix(in srgb, var(--paper) 72%, var(--paper-strong));
+  font: inherit;
+  font-size: .76rem;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.leaf-chip span { color: var(--muted); }
+.leaf-chip strong { font-size: .82rem; font-variant-numeric: tabular-nums; }
+.leaf-chip.is-static { border-style: dashed; opacity: .85; }
+
+.leaf-chip.stat-action:not(.is-active):hover {
+  border-color: var(--forest-400);
+  background: var(--moss);
+}
+
+.leaf-chip.is-active {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(140deg, var(--forest-500), var(--forest-700));
+}
+
+.leaf-chip.is-active span { color: color-mix(in srgb, #fff 80%, transparent); }
 
 .canopy-hint {
   position: relative;
@@ -526,9 +625,17 @@ kbd {
 }
 
 .section-heading h2 {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   font-size: .94rem;
 }
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 10px;
+}
+
+.filter-field { min-width: 0; }
 
 .field-label,
 label > span {
@@ -1603,8 +1710,15 @@ textarea {
    equally specific dark override or every switch would look switched off */
 [data-theme="dark"] .toggle.on { background: var(--forest-600); }
 [data-theme="dark"] .toggle-field input:checked + i { background: var(--forest-600); }
-[data-theme="dark"] .stat-action.is-active strong,
-[data-theme="dark"] .stat-action.is-active span { color: #eaf7ec; }
+[data-theme="dark"] .canopy-total.is-active,
+[data-theme="dark"] .canopy-total,
+[data-theme="dark"] .leaf-chip { color: var(--forest-300); }
+
+[data-theme="dark"] .canopy-total.is-active span { color: var(--forest-400); }
+
+[data-theme="dark"] .leaf-chip.is-active { color: #eaf7ec; }
+[data-theme="dark"] .canopy-total.is-active span,
+[data-theme="dark"] .leaf-chip.is-active span { color: color-mix(in srgb, #eaf7ec 78%, transparent); }
 /* mid-forest ink is too close to the dark canvas for small glyphs */
 [data-theme="dark"] .branch-chevron,
 [data-theme="dark"] .search-field { color: var(--forest-400); }
@@ -1615,17 +1729,15 @@ textarea {
 
 @media (max-width: 900px) {
   .workspace { grid-template-columns: 1fr; }
-  .sidebar { position: static; grid-template-columns: 1fr 1.4fr; }
+  .sidebar { position: static; grid-template-columns: 1fr 1.4fr; padding-left: 0; }
+  /* the trunk only reads correctly in the tall single-column layout */
+  .sidebar::before,
+  .sidebar::after,
+  .bough-node::before,
+  .bough-node::after { display: none; }
   .sidebar-note { display: none; }
   .sidebar-actions { grid-column: span 2; }
-  .filter-section {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 12px;
-  }
-  .filter-section .section-heading,
-  .filter-section .field-label:first-of-type,
-  .filter-section .search-field { grid-column: 1 / -1; }
+  .canopy-card { align-self: start; }
 }
 
 @media (max-width: 640px) {
@@ -1652,7 +1764,7 @@ textarea {
   .mobile-filter-toggle strong { color: var(--forest-600); font-size: .78rem; }
   .sidebar:not(.mobile-open) > :not(.mobile-filter-toggle) { display: none; }
   .sidebar-actions { grid-column: auto; }
-  .filter-section { grid-template-columns: 1fr; }
+  .filter-grid { grid-template-columns: 1fr; }
   .content-heading { align-items: start; flex-direction: column; }
   .view-options { width: 100%; }
   /* two selects share one row, the view buttons get a tidy full-width row */

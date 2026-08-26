@@ -76,16 +76,15 @@
             <strong id="mobileFilterState">展开</strong>
           </button>
 
-          <section class="canopy-card" aria-labelledby="canopyHeading">
+          <section class="canopy-card bough-node" aria-labelledby="canopyHeading">
             <div class="card-head">
-              <span class="leaf-dot" aria-hidden="true"></span>
               <h2 id="canopyHeading">树冠概览</h2>
             </div>
-            <div class="stat-grid" id="statsGrid" aria-live="polite"></div>
+            <div class="canopy" id="statsGrid" aria-live="polite"></div>
             <p class="canopy-hint">点击叶片即可按该条件筛选。</p>
           </section>
 
-          <section class="filter-section" aria-labelledby="filterHeading">
+          <section class="filter-section bough-node" aria-labelledby="filterHeading">
             <div class="section-heading">
               <h2 id="filterHeading">定位条目</h2>
               <button class="text-button" id="clearFiltersButton" type="button">清除</button>
@@ -104,26 +103,36 @@
               <kbd aria-hidden="true">/</kbd>
             </div>
 
-            <label class="field-label" for="statusFilter">状态</label>
-            <select id="statusFilter">
-              <option value="all">全部状态</option>
-              <option value="enabled">仅启用</option>
-              <option value="disabled">仅停用</option>
-              <option value="scheduled">仅日程（Cron）</option>
-              <option value="scoped">仅范围限定</option>
-            </select>
-
-            <label class="field-label" for="templateFilter">模板</label>
-            <select id="templateFilter"><option value="">全部模板</option></select>
-
-            <label class="field-label" for="folderFilter">文件夹</label>
-            <select id="folderFilter"><option value="">全部文件夹</option></select>
-
-            <label class="field-label" for="tagFilter">标签</label>
-            <select id="tagFilter"><option value="">全部标签</option></select>
+            <div class="filter-grid">
+              <div class="filter-field">
+                <label class="field-label" for="statusFilter">状态</label>
+                <select id="statusFilter">
+                  <option value="all">全部</option>
+                  <option value="enabled">仅启用</option>
+                  <option value="disabled">仅停用</option>
+                  <option value="scheduled">仅日程（Cron）</option>
+                  <option value="scoped">仅范围限定</option>
+                </select>
+              </div>
+              <div class="filter-field">
+                <label class="field-label" for="templateFilter">模板</label>
+                <select id="templateFilter"><option value="">全部</option></select>
+              </div>
+              <div class="filter-field">
+                <label class="field-label" for="folderFilter">文件夹</label>
+                <select id="folderFilter"><option value="">全部</option></select>
+              </div>
+              <div class="filter-field">
+                <label class="field-label" for="tagFilter">标签</label>
+                <select id="tagFilter"><option value="">全部</option></select>
+              </div>
+            </div>
           </section>
 
-          <section class="sidebar-actions" aria-label="文件操作">
+          <section class="sidebar-actions bough-node" aria-labelledby="transferHeading">
+            <div class="section-heading">
+              <h2 id="transferHeading">移植与留种</h2>
+            </div>
             <button class="button button-secondary" id="importButton" type="button">
               <span aria-hidden="true">⇧</span> 导入世界书
             </button>

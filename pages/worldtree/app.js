@@ -108,8 +108,9 @@ const UPDATED_TIERS = [
   { max: Infinity, key: "fresh-older", label: "更早" },
 ];
 
+// the canopy shows one trunk-ring total plus a row of leaf chips
+const STAT_TOTAL = { key: "total", label: "全部条目", status: "all" };
 const STAT_CELLS = [
-  { key: "total", label: "全部", status: "all" },
   { key: "enabled", label: "启用中", status: "enabled" },
   { key: "disabled", label: "已停用", status: "disabled" },
   { key: "scheduled", label: "日程", status: "scheduled" },
@@ -304,7 +305,7 @@ function setSelectOptions(select, firstLabel, values, currentValue) {
 function syncTemplateFilter() {
   const previous = state.filters.template;
   refs.templateFilter.replaceChildren();
-  const first = create("option", "", "全部模板");
+  const first = create("option", "", "全部");
   first.value = "";
   refs.templateFilter.append(first);
   for (const template of state.templates) {
@@ -319,36 +320,48 @@ function syncTemplateFilter() {
 
 function syncFilterControls(facets) {
   syncTemplateFilter();
-  setSelectOptions(refs.folder, "全部文件夹", facets.folders || [], state.filters.folder);
-  setSelectOptions(refs.tag, "全部标签", facets.tags || [], state.filters.tag);
+  setSelectOptions(refs.folder, "全部", facets.folders || [], state.filters.folder);
+  setSelectOptions(refs.tag, "全部", facets.tags || [], state.filters.tag);
   state.filters.folder = refs.folder.value;
   state.filters.tag = refs.tag.value;
+}
+
+function statFilterButton(cell, extraClass) {
+  const active = state.filters.status === cell.status;
+  const button = create("button", `${extraClass} stat-action${active ? " is-active" : ""}`);
+  button.type = "button";
+  button.dataset.status = cell.status;
+  button.setAttribute("aria-pressed", String(active));
+  button.title = `按“${cell.label}”筛选`;
+  button.addEventListener("click", () => {
+    refs.status.value = cell.status;
+    updateFilters();
+  });
+  return button;
 }
 
 function renderStats(stats) {
   state.stats = stats || {};
   refs.stats.replaceChildren();
+
+  const total = statFilterButton(STAT_TOTAL, "canopy-total");
+  total.append(
+    create("strong", "", String(state.stats[STAT_TOTAL.key] ?? 0)),
+    create("span", "", STAT_TOTAL.label),
+    create("i", "canopy-rings", ""),
+  );
+  refs.stats.append(total);
+
+  const leaves = create("div", "leaf-row");
   for (const cell of STAT_CELLS) {
     const value = String(state.stats[cell.key] ?? 0);
-    if (!cell.status) {
-      const readOnly = create("div", "stat");
-      readOnly.append(create("strong", "", value), create("span", "", cell.label));
-      refs.stats.append(readOnly);
-      continue;
-    }
-    const active = state.filters.status === cell.status;
-    const button = create("button", `stat stat-action${active ? " is-active" : ""}`);
-    button.type = "button";
-    button.dataset.status = cell.status;
-    button.setAttribute("aria-pressed", String(active));
-    button.title = `按“${cell.label}”筛选`;
-    button.append(create("strong", "", value), create("span", "", cell.label));
-    button.addEventListener("click", () => {
-      refs.status.value = cell.status;
-      updateFilters();
-    });
-    refs.stats.append(button);
+    const node = cell.status
+      ? statFilterButton(cell, "leaf-chip")
+      : create("div", "leaf-chip is-static");
+    node.append(create("span", "", cell.label), create("strong", "", value));
+    leaves.append(node);
   }
+  refs.stats.append(leaves);
 }
 
 /* -------------------------------------------------------------- grouping */
