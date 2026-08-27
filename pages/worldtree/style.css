@@ -24,6 +24,25 @@
   --danger: #b4413c;
   --warning: #a6711d;
   --shadow: 0 18px 55px rgb(14 53 34 / 12%);
+  /* Surfaces are leaves, not sheets of paper. Every panel is translucent
+     enough for the world tree behind it to show through, and no lighter than
+     ~72% so body copy still clears WCAG AA against the canvas. */
+  --glass: rgb(255 255 255 / 72%);
+  --glass-soft: rgb(255 255 255 / 54%);
+  --glass-pop: rgb(255 255 255 / 88%);
+  --glass-sheen: rgb(255 255 255 / 70%);
+  --glass-blur: 16px;
+  /* Leaf venation: dense hairline ribs at a shallow angle. The angle is kept
+     well away from the 99deg light shafts behind the glass, otherwise the two
+     families of diagonals cross at a narrow angle and moire. */
+  --leaf-veins: repeating-linear-gradient(
+    28deg,
+    transparent 0 13px,
+    color-mix(in srgb, var(--forest-700) 4%, transparent) 13px 14px,
+    transparent 14px 27px
+  );
+  /* one squared corner is the whole leaf silhouette; reused on every panel */
+  --leaf-corner: 7px;
   --radius-lg: 22px;
   --radius-md: 14px;
   --radius-sm: 9px;
@@ -49,6 +68,16 @@
   --danger: #ee8b84;
   --warning: #e9b866;
   --shadow: 0 18px 55px rgb(0 0 0 / 30%);
+  --glass: rgb(20 34 25 / 74%);
+  --glass-soft: rgb(13 24 18 / 58%);
+  --glass-pop: rgb(21 35 26 / 90%);
+  --glass-sheen: rgb(255 255 255 / 7%);
+  --leaf-veins: repeating-linear-gradient(
+    28deg,
+    transparent 0 13px,
+    color-mix(in srgb, var(--forest-300) 4%, transparent) 13px 14px,
+    transparent 14px 27px
+  );
 }
 
 /* The same world tree after dusk: a midnight canopy whose leaves fluoresce.
@@ -73,6 +102,10 @@
   --danger: #ff93a2;
   --warning: #ffd489;
   --shadow: 0 20px 60px rgb(0 0 0 / 55%);
+  --glass: rgb(9 20 34 / 70%);
+  --glass-soft: rgb(4 10 19 / 56%);
+  --glass-pop: rgb(11 22 38 / 88%);
+  --glass-sheen: rgb(116 243 205 / 12%);
 }
 
 /* --- entry template accents -------------------------------------------- */
@@ -202,31 +235,47 @@ kbd {
 .sky-limb-3 { stroke-width: 14.5; }
 .sky-limb-4 { stroke-width: 8.5; }
 .sky-limb-5 { stroke-width: 5; }
-.sky-root { stroke-width: 10; opacity: .4; }
+.sky-root { stroke-width: 11; opacity: .6; }
 
-/* mist that swallows the root system so text near the bottom stays readable */
+/* Sunlight falling through the canopy. This fills the upper corners that the
+   crown alone leaves empty, and it is the reason the old drifting blobs could
+   be dropped: they read as smudges on a wide screen, a light shaft does not. */
+.sky-shafts {
+  position: absolute;
+  inset: -18vh -22% 26vh -22%;
+  background: repeating-linear-gradient(
+    99deg,
+    transparent 0 58px,
+    rgb(150 220 175 / 9%) 58px 104px,
+    transparent 104px 188px
+  );
+  mask-image: radial-gradient(74% 92% at 50% 0%, #000 0 30%, transparent 84%);
+  animation: shaftbreathe 26s ease-in-out infinite;
+}
+
+/* A thinning veil rather than a wipe: the root system stays readable as roots
+   instead of being painted over with the page background. */
 .sky-mist {
   position: absolute;
   inset: auto -6% -2% -6%;
-  height: 42vh;
+  height: 30vh;
   background: linear-gradient(
     180deg,
     rgb(0 0 0 / 0),
-    color-mix(in srgb, var(--paper) 68%, transparent) 46%,
-    var(--paper)
+    color-mix(in srgb, var(--paper) 32%, transparent) 52%,
+    color-mix(in srgb, var(--paper) 72%, transparent)
   );
 }
 
-.mote {
+/* damp earth for the roots to disappear into along the bottom edge */
+.sky-loam {
   position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgb(120 200 145 / .5), transparent 70%);
-  animation: drift 24s ease-in-out infinite;
+  inset: auto 0 0 0;
+  height: 24vh;
+  background:
+    radial-gradient(126% 100% at 50% 100%, color-mix(in srgb, var(--forest-800) 15%, transparent) 0 40%, transparent 78%),
+    linear-gradient(180deg, transparent, color-mix(in srgb, var(--forest-700) 8%, transparent));
 }
-
-.mote-a { top: 11%; left: 5%; width: 200px; height: 200px; }
-.mote-b { top: 52%; right: 8%; width: 140px; height: 140px; animation-duration: 31s; animation-delay: -7s; }
-.mote-c { bottom: 10%; left: 36%; width: 96px; height: 96px; animation-duration: 37s; animation-delay: -15s; }
 
 :is([data-theme="dark"], [data-theme="nightglow"]) .sky {
   background:
@@ -245,7 +294,20 @@ kbd {
 :is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-core { stop-opacity: .34; }
 :is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-mid { stop-opacity: .2; }
 
-:is([data-theme="dark"], [data-theme="nightglow"]) .mote { background: radial-gradient(circle, rgb(72 170 112 / .38), transparent 70%); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-shafts {
+  background: repeating-linear-gradient(
+    99deg,
+    transparent 0 58px,
+    rgb(120 220 165 / 6%) 58px 104px,
+    transparent 104px 188px
+  );
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-loam {
+  background:
+    radial-gradient(126% 100% at 50% 100%, rgb(0 0 0 / 34%) 0 42%, transparent 80%),
+    linear-gradient(180deg, transparent, rgb(0 0 0 / 26%));
+}
 
 /* --- nightglow: the tree lit from the inside ---------------------------- */
 
@@ -267,7 +329,7 @@ kbd {
 [data-theme="nightglow"] .sky-limb,
 [data-theme="nightglow"] .sky-root { stroke: #0a2231; }
 
-[data-theme="nightglow"] .sky-root { opacity: .62; }
+[data-theme="nightglow"] .sky-root { opacity: .8; }
 
 [data-theme="nightglow"] #skyCrown .stop-core { stop-color: var(--forest-500); stop-opacity: .3; }
 [data-theme="nightglow"] #skyCrown .stop-mid { stop-color: var(--forest-600); stop-opacity: .17; }
@@ -283,7 +345,15 @@ kbd {
   );
 }
 
-[data-theme="nightglow"] .mote { background: radial-gradient(circle, rgb(47 210 164 / .3), transparent 70%); }
+/* after dark the shafts become moonlight sifting through the leaves */
+[data-theme="nightglow"] .sky-shafts {
+  background: repeating-linear-gradient(
+    99deg,
+    transparent 0 58px,
+    rgb(47 210 164 / 7%) 58px 104px,
+    transparent 104px 188px
+  );
+}
 
 /* spores drifting out of the canopy; only the night theme shows them */
 .fireflies { display: none; }
@@ -320,9 +390,10 @@ kbd {
 /* --- shell and top bar ------------------------------------------------- */
 
 .app-shell {
-  max-width: 1540px;
+  --shell-width: 1108px;
+  max-width: var(--shell-width);
   margin: 0 auto;
-  padding: 30px clamp(18px, 3vw, 46px) 46px;
+  padding: 30px clamp(18px, 3vw, 40px) 48px;
 }
 
 .topbar {
@@ -341,7 +412,7 @@ kbd {
 }
 
 .brand h1,
-.content-heading h2,
+.tree-caption h2,
 .drawer-header h2,
 .import-dialog h2,
 .confirm-dialog h2 {
@@ -530,6 +601,7 @@ kbd {
 }
 
 .text-button:hover { text-decoration: underline; }
+.text-button:disabled { color: var(--muted); text-decoration: none; }
 
 .icon-button {
   display: grid;
@@ -549,241 +621,15 @@ kbd {
   background: var(--moss);
 }
 
-/* --- workspace and sidebar --------------------------------------------- */
+/* --- the content column ------------------------------------------------ */
 
-.workspace {
+.content {
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(248px, 302px) minmax(0, 1fr);
-  gap: 28px;
-  align-items: start;
+  gap: 0;
 }
 
-.sidebar {
-  position: sticky;
-  top: 14px;
-  display: grid;
-  gap: 16px;
-  padding-left: 26px;
-}
-
-/* the sidebar grows on its own trunk, echoing the entry tree to its right */
-.sidebar::before {
-  content: "";
-  position: absolute;
-  left: 8px;
-  top: 3px;
-  bottom: 28px;
-  width: 4px;
-  border-radius: 4px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--forest-400) 65%, transparent),
-    var(--forest-600) 32%,
-    var(--forest-800)
-  );
-  opacity: .8;
-}
-
-/* root flare where the trunk meets the foot of the column */
-.sidebar::after {
-  content: "";
-  position: absolute;
-  left: -11px;
-  bottom: 10px;
-  width: 46px;
-  height: 18px;
-  border-top: 2px solid color-mix(in srgb, var(--forest-700) 42%, transparent);
-  border-radius: 50% 50% 0 0;
-  opacity: .5;
-}
-
-.mobile-filter-toggle { display: none; }
-
-.canopy-card,
-.filter-section,
-.sidebar-actions {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--paper-strong) 88%, transparent);
-  box-shadow: 0 9px 28px rgb(19 72 45 / 5%);
-}
-
-.canopy-card { position: relative; }
-
-/* every panel is a bough: a twig off the trunk plus a bud at the joint */
-.bough-node { position: relative; }
-
-.bough-node::before {
-  content: "";
-  position: absolute;
-  left: -18px;
-  top: 25px;
-  width: 18px;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--forest-700), color-mix(in srgb, var(--forest-400) 55%, transparent));
-}
-
-.bough-node::after {
-  content: "";
-  position: absolute;
-  left: -7px;
-  top: 20px;
-  width: 11px;
-  height: 11px;
-  border-radius: 50% 50% 50% 0;
-  background: var(--forest-500);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--paper) 82%, transparent);
-  transform: rotate(-45deg);
-}
-
-.card-head {
-  display: flex;
-  position: relative;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 13px;
-  font-weight: 800;
-}
-
-.card-head h2 {
-  margin: 0;
-  font-size: .94rem;
-}
-
-.leaf-dot {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 auto;
-  border-radius: 50% 50% 50% 0;
-  background: var(--forest-500);
-  transform: rotate(-45deg);
-}
-
-/* --- canopy overview: one trunk ring plus a spray of leaf chips --------- */
-
-.canopy { display: grid; gap: 10px; }
-
-.canopy-total {
-  display: flex;
-  position: relative;
-  overflow: hidden;
-  align-items: baseline;
-  gap: 9px;
-  padding: 13px 15px;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  color: var(--forest-800);
-  background:
-    radial-gradient(120% 160% at 86% 0%, color-mix(in srgb, var(--forest-400) 20%, transparent), transparent 62%),
-    linear-gradient(145deg, var(--paper-strong), var(--moss));
-  font: inherit;
-  text-align: left;
-  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
-}
-
-.canopy-total strong {
-  font-size: 1.72rem;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.02em;
-  line-height: 1;
-}
-
-.canopy-total span {
-  color: var(--muted);
-  font-size: .76rem;
-  font-weight: 750;
-}
-
-/* growth rings, so the total reads as a slice through the trunk */
-.canopy-rings {
-  position: absolute;
-  top: 50%;
-  right: -26px;
-  width: 96px;
-  height: 96px;
-  translate: 0 -50%;
-  border-radius: 50%;
-  background: repeating-radial-gradient(
-    circle at center,
-    transparent 0 6px,
-    color-mix(in srgb, var(--forest-600) 26%, transparent) 6px 7.5px
-  );
-  opacity: .75;
-  pointer-events: none;
-}
-
-.canopy-total:not(.is-active):hover { border-color: var(--forest-400); }
-
-/* "all" is the resting filter, so selection is a ring rather than a dark fill */
-.canopy-total.is-active {
-  border-color: var(--forest-500);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest-400) 20%, transparent);
-}
-
-.canopy-total.is-active span { color: var(--forest-700); }
-
-.leaf-row { display: flex; flex-wrap: wrap; gap: 7px; }
-
-.leaf-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 11px 6px 10px;
-  border: 1px solid var(--line);
-  /* one squared corner turns the pill into a leaf silhouette */
-  border-radius: 13px 13px 13px 4px;
-  color: var(--forest-800);
-  background: color-mix(in srgb, var(--paper) 72%, var(--paper-strong));
-  font: inherit;
-  font-size: .76rem;
-  transition: background .16s ease, border-color .16s ease, color .16s ease;
-}
-
-.leaf-chip span { color: var(--muted); }
-.leaf-chip strong { font-size: .82rem; font-variant-numeric: tabular-nums; }
-.leaf-chip.is-static { border-style: dashed; opacity: .85; }
-
-.leaf-chip.stat-action:not(.is-active):hover {
-  border-color: var(--forest-400);
-  background: var(--moss);
-}
-
-.leaf-chip.is-active {
-  border-color: transparent;
-  color: #fff;
-  background: linear-gradient(140deg, var(--forest-500), var(--forest-700));
-}
-
-.leaf-chip.is-active span { color: color-mix(in srgb, #fff 80%, transparent); }
-
-.canopy-hint {
-  position: relative;
-  margin: 11px 0 0;
-  color: var(--muted);
-  font-size: .72rem;
-}
-
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.section-heading h2 {
-  margin: 0 0 12px;
-  font-size: .94rem;
-}
-
-.filter-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 10px;
-}
-
-.filter-field { min-width: 0; }
+/* --- shared form controls ---------------------------------------------- */
 
 .field-label,
 label > span {
@@ -792,31 +638,6 @@ label > span {
   color: var(--muted);
   font-size: .76rem;
   font-weight: 750;
-}
-
-.search-field {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--paper);
-  color: var(--forest-600);
-}
-
-.search-field:focus-within {
-  border-color: var(--forest-400);
-  box-shadow: 0 0 0 3px rgb(56 155 101 / .12);
-}
-
-.search-field input {
-  width: 100%;
-  min-width: 0;
-  padding: 10px 0;
-  border: 0;
-  color: var(--ink);
-  background: transparent;
 }
 
 select,
@@ -852,42 +673,348 @@ textarea {
   resize: vertical;
 }
 
-.sidebar-actions { display: grid; gap: 10px; }
+/* --- the canopy band ---------------------------------------------------- */
 
-.export-row {
+/* Everything that used to sit in a left rail now hangs from one band across
+   the top of the page: the crown of the tree. Reading order matches the way
+   the eye travels down a trunk - search, folded filters, tallies, view. */
+.canopy-band {
   display: grid;
-  grid-template-columns: 1fr 74px;
+  position: relative;
+  z-index: 2;
+  gap: 13px;
+  margin: 0 0 0;
+  padding: 19px 21px 18px;
+  border: 1px solid color-mix(in srgb, var(--forest-400) 34%, var(--line));
+  border-radius: 26px 26px 26px var(--leaf-corner);
+  background:
+    var(--leaf-veins),
+    radial-gradient(126% 150% at 50% -32%, color-mix(in srgb, var(--forest-400) 22%, transparent), transparent 58%),
+    linear-gradient(172deg, color-mix(in srgb, var(--moss) 34%, transparent), transparent 64%),
+    var(--glass);
+  backdrop-filter: blur(var(--glass-blur)) saturate(155%);
+  box-shadow:
+    0 16px 40px rgb(19 72 45 / 8%),
+    inset 0 1px 0 var(--glass-sheen);
+}
+
+/* leaves budding off the top edge, so the band reads as foliage rather than
+   as a toolbar; scaleY flips the clipped viewBox so the bumps point skyward */
+.band-crest {
+  position: absolute;
+  top: -25px;
+  left: 16px;
+  width: calc(100% - 32px);
+  height: 27px;
+  fill: var(--forest-500);
+  transform: scaleY(-1);
+  pointer-events: none;
+}
+
+/* the buds are spaced and sized on a rhythm so the top edge scallops; without
+   the base strip the shorter buds would leave gaps against the band edge */
+.crest-base { opacity: .92; }
+/* The mask lives in the element's own coordinates, before scaleY(-1) flips it.
+   The buds grow toward local bottom, so fading the bottom of the mask is what
+   softens the tips against the sky and keeps the base solid on the band. */
+.band-crest { mask-image: linear-gradient(180deg, #000 0 46%, rgb(0 0 0 / .5)); }
+.crest-leaves circle { opacity: .9; }
+.crest-leaves circle:nth-child(2n) { opacity: .74; }
+.crest-leaves circle:nth-child(3n) { fill: var(--forest-400); }
+.crest-leaves circle:nth-child(4n) { fill: var(--forest-600); opacity: .78; }
+
+/* daylight pooling in the top of the band */
+.band-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(72% 120% at 22% -10%, color-mix(in srgb, #fff 62%, transparent), transparent 62%);
+  opacity: .8;
+  pointer-events: none;
+}
+
+.canopy-band > *:not(.band-crest):not(.band-halo):not(.band-stem) { position: relative; }
+
+/* --- band row 1: search ------------------------------------------------- */
+
+.band-seek {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.search-field {
+  display: flex;
+  flex: 1 1 260px;
+  min-width: 0;
+  gap: 8px;
+  align-items: center;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass-soft);
+  color: var(--forest-600);
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+
+.search-field:focus-within {
+  border-color: var(--forest-400);
+  box-shadow: 0 0 0 3px rgb(56 155 101 / .12);
+}
+
+.search-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink);
+  background: transparent;
+}
+
+.search-field input:focus { box-shadow: none; }
+.search-glyph { flex: 0 0 auto; font-size: 1.16rem; line-height: 1; }
+.search-field kbd { flex: 0 0 auto; }
+
+.band-tool {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 15px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--forest-800);
+  background: var(--glass-soft);
+  font-size: .86rem;
+  font-weight: 760;
+  transition: border-color .16s ease, background .16s ease, color .16s ease;
+}
+
+.band-tool:hover {
+  border-color: var(--forest-400);
+  background: var(--moss);
+}
+
+.band-tool-glyph { color: var(--forest-500); font-size: 1rem; line-height: 1; }
+
+.band-tool.is-open {
+  border-color: var(--forest-500);
+  background: var(--moss);
+}
+
+/* a filtered list is easy to mistake for an empty library, so the trigger
+   itself carries the count of everything that is narrowing the view */
+.band-tool.has-filters {
+  border-color: var(--forest-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest-400) 18%, transparent);
+}
+
+.band-tool-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--forest-600);
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.band-caret {
+  width: 0;
+  height: 0;
+  border-top: 5px solid currentcolor;
+  border-right: 4.5px solid transparent;
+  border-left: 4.5px solid transparent;
+  opacity: .6;
+  transition: transform .18s ease;
+}
+
+.band-tool.is-open .band-caret { transform: rotate(180deg); }
+
+/* --- band row 2: the folded filter sheet -------------------------------- */
+
+.band-sheet {
+  padding: 4px 16px 15px;
+  border: 1px solid color-mix(in srgb, var(--forest-400) 30%, var(--line));
+  border-radius: 18px 18px 18px var(--leaf-corner);
+  background:
+    var(--leaf-veins),
+    linear-gradient(168deg, color-mix(in srgb, var(--moss) 46%, transparent), transparent 72%),
+    var(--glass-soft);
+  backdrop-filter: blur(12px) saturate(140%);
+  animation: menu-pop-in .16s ease both;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 0 12px;
+}
+
+.filter-field { min-width: 0; }
+
+/* --- band row 3: a branch, then the tallies ----------------------------- */
+
+/* A limb forks off the trunk, so it has to start at the trunk. The node is
+   pulled left until it sits on the same 15px axis as the stem below the band,
+   and the twig then runs right and thins out, the way a real branch does. */
+.band-limb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 1px -22px 0 -12px;
+}
+
+.limb-line {
+  flex: 1;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--forest-500) 90%, transparent),
+    color-mix(in srgb, var(--forest-400) 52%, transparent) 44%,
+    transparent
+  );
+}
+
+/* the leading segment only existed to centre the node; the trunk does that now */
+.limb-line:first-child { display: none; }
+
+.limb-node {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50% 50% 50% 0;
+  background: var(--forest-500);
+  transform: rotate(-45deg);
+}
+
+/* --- canopy tallies: one trunk ring plus a spray of leaf chips ---------- */
+
+.canopy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
-.sidebar-note {
-  margin: 0;
-  padding: 0 5px;
+.canopy-total {
+  display: inline-flex;
+  position: relative;
+  overflow: hidden;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 34px 9px 15px;
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 16px 5px;
+  color: var(--forest-800);
+  background:
+    radial-gradient(130% 170% at 88% 0%, color-mix(in srgb, var(--forest-400) 22%, transparent), transparent 62%),
+    linear-gradient(145deg, color-mix(in srgb, var(--moss) 20%, transparent), color-mix(in srgb, var(--moss) 76%, transparent)),
+    var(--glass);
+  font: inherit;
+  text-align: left;
+  transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.canopy-total strong {
+  font-size: 1.24rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  line-height: 1;
+}
+
+.canopy-total span {
   color: var(--muted);
   font-size: .76rem;
+  font-weight: 750;
 }
 
-/* --- content heading and view options ---------------------------------- */
+/* growth rings, so the total reads as a slice through the trunk */
+.canopy-rings {
+  position: absolute;
+  top: 50%;
+  right: -22px;
+  width: 62px;
+  height: 62px;
+  translate: 0 -50%;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle at center,
+    transparent 0 4px,
+    color-mix(in srgb, var(--forest-600) 26%, transparent) 4px 5.4px
+  );
+  opacity: .42;
+  pointer-events: none;
+}
 
-.content { min-width: 0; }
+.canopy-total:not(.is-active):hover { border-color: var(--forest-400); }
 
-.content-heading {
+/* "all" is the resting filter, so selection is a ring rather than a dark fill */
+.canopy-total.is-active {
+  border-color: var(--forest-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--forest-400) 20%, transparent);
+}
+
+.canopy-total.is-active span { color: var(--forest-700); }
+
+.leaf-chip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px 7px 10px;
+  border: 1px solid var(--line);
+  /* one squared corner turns the pill into a leaf silhouette */
+  border-radius: 14px 14px 14px 4px;
+  color: var(--forest-800);
+  background: var(--glass-soft);
+  font: inherit;
+  font-size: .76rem;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.leaf-chip span { color: var(--muted); }
+.leaf-chip strong { font-size: .82rem; font-variant-numeric: tabular-nums; }
+.leaf-chip.is-static { border-style: dashed; opacity: .85; }
+.leaf-chip.is-empty { opacity: .58; }
+
+.leaf-glyph {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50% 50% 50% 0;
+  background: var(--forest-500);
+  transform: rotate(-45deg);
+}
+
+.leaf-chip.stat-action:not(.is-active):hover {
+  border-color: var(--forest-400);
+  background: var(--moss);
+}
+
+.leaf-chip.is-active {
+  border-color: transparent;
+  color: #fff;
+  background: linear-gradient(140deg, var(--forest-500), var(--forest-700));
+}
+
+.leaf-chip.is-active span { color: color-mix(in srgb, #fff 80%, transparent); }
+.leaf-chip.is-active .leaf-glyph { background: color-mix(in srgb, #fff 86%, transparent); }
+
+/* --- band row 4: view options ------------------------------------------- */
+
+.band-view {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 4px 4px 16px;
-}
-
-.content-title { min-width: 0; }
-.content-heading h2 { font-size: clamp(1.25rem, 2vw, 1.55rem); }
-
-.view-options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 10px;
+  gap: 9px;
 }
 
 .view-field {
@@ -908,10 +1035,176 @@ textarea {
   padding: 5px 9px;
 }
 
-.view-buttons {
+.view-split {
+  width: 1px;
+  height: 24px;
+  align-self: center;
+  margin: 0 3px;
+  background: color-mix(in srgb, var(--forest-400) 46%, var(--line));
+}
+
+/* --- band row 5: what is currently narrowing the list ------------------- */
+
+.band-active {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  padding-top: 2px;
+}
+
+.band-active-label {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 780;
+  letter-spacing: .06em;
+}
+
+.active-chip {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 100%;
+  padding: 4px 8px 4px 10px;
+  border: 1px dashed color-mix(in srgb, var(--forest-500) 52%, var(--line));
+  border-radius: 999px;
+  color: var(--forest-800);
+  background: color-mix(in srgb, var(--moss) 52%, var(--paper-strong));
+  font: inherit;
+  font-size: .74rem;
+  transition: border-color .16s ease, background .16s ease;
+}
+
+.active-chip:hover {
+  border-style: solid;
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--paper-strong));
+}
+
+.active-chip-key { color: var(--muted); }
+
+.active-chip strong {
+  overflow: hidden;
+  max-width: 190px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-chip-x {
+  color: var(--muted);
+  font-size: .96rem;
+  font-style: normal;
+  line-height: 1;
+}
+
+.active-chip:hover .active-chip-x { color: var(--danger); }
+
+/* --- the stem: band -> caption -> trunk --------------------------------- */
+
+/* the band is the crown, the list below is the foliage, so a single unbroken
+   line has to run between them or the metaphor snaps in half */
+.band-stem {
+  position: absolute;
+  bottom: -19px;
+  left: 15px;
+  width: 4px;
+  height: 21px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--forest-500), var(--forest-400));
+  opacity: .85;
+}
+
+.tree-caption {
+  position: relative;
+  margin: 0;
+  padding: 19px 0 11px 38px;
+}
+
+.tree-caption::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: -7px;
+  left: 15px;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--forest-400), var(--forest-300));
+  opacity: .85;
+}
+
+.tree-caption h2 { font-size: clamp(1.16rem, 1.6vw, 1.42rem); }
+
+.tree-caption-note {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.shell-note {
+  margin: 22px 0 0;
+  padding-left: 38px;
+  color: var(--muted);
+  font-size: .76rem;
+}
+
+/* --- import / export menu in the top bar -------------------------------- */
+
+.graft-menu { position: relative; }
+
+.graft-trigger { display: inline-flex; align-items: center; gap: 5px; }
+
+.graft-caret {
+  width: 0;
+  height: 0;
+  border-top: 5px solid currentcolor;
+  border-right: 4.5px solid transparent;
+  border-left: 4.5px solid transparent;
+  opacity: .55;
+  transition: transform .18s ease;
+}
+
+.graft-menu.is-open .graft-trigger { background: var(--moss); }
+.graft-menu.is-open .graft-caret { transform: rotate(180deg); }
+
+.graft-pop {
+  display: none;
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 14;
+  width: 252px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--leaf-corner);
+  background: var(--leaf-veins), var(--glass-pop);
+  backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.graft-menu.is-open .graft-pop {
+  display: grid;
+  gap: 1px;
+  animation: menu-pop-in .14s ease both;
+}
+
+.graft-pop-title {
+  margin: 2px 0 6px;
+  padding-inline: 4px;
+  color: var(--muted);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.graft-pop-note {
+  margin: 7px 4px 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.45;
 }
 
 /* --- bulk bar ---------------------------------------------------------- */
@@ -927,9 +1220,14 @@ textarea {
   margin: 0 0 14px;
   padding: 10px 13px;
   border: 1px solid var(--forest-300);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--moss) 88%, var(--paper-strong));
-  box-shadow: 0 10px 26px rgb(19 72 45 / 10%);
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--leaf-corner);
+  background:
+    linear-gradient(170deg, color-mix(in srgb, var(--moss) 74%, transparent), color-mix(in srgb, var(--moss) 40%, transparent)),
+    var(--glass);
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow:
+    0 10px 26px rgb(19 72 45 / 10%),
+    inset 0 1px 0 var(--glass-sheen);
 }
 
 .bulk-bar strong {
@@ -1001,7 +1299,8 @@ textarea {
   position: relative;
   align-items: center;
   gap: 9px;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   padding: 7px 10px 7px 0;
   border: 0;
   border-radius: 10px;
@@ -1054,7 +1353,6 @@ textarea {
 }
 
 .branch-chevron {
-  margin-left: auto;
   color: var(--forest-600);
   font-size: .78rem;
   transition: transform .18s ease;
@@ -1092,9 +1390,12 @@ textarea {
   padding: 15px 16px;
   border: 1px solid var(--line);
   border-left: 3px solid color-mix(in srgb, var(--tpl, var(--forest-400)) 46%, var(--line));
-  border-radius: var(--radius-lg);
-  background: var(--paper-strong);
-  box-shadow: 0 7px 20px rgb(18 64 40 / 4%);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--leaf-corner);
+  background: var(--leaf-veins), var(--glass);
+  backdrop-filter: blur(11px) saturate(140%);
+  box-shadow:
+    0 7px 20px rgb(18 64 40 / 4%),
+    inset 0 1px 0 var(--glass-sheen);
   transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 
@@ -1123,7 +1424,7 @@ textarea {
 }
 
 .entry-card.is-disabled::after { background: color-mix(in srgb, var(--muted) 70%, var(--line)); }
-.entry-card.is-disabled { background: color-mix(in srgb, var(--paper-strong) 82%, var(--paper)); }
+.entry-card.is-disabled { background: var(--glass-soft); }
 .entry-card.is-disabled .entry-open { color: var(--muted); }
 
 .entry-card:hover {
@@ -1331,8 +1632,9 @@ textarea {
   min-width: 172px;
   padding: 6px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--paper-strong);
+  border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--leaf-corner);
+  background: var(--glass-pop);
+  backdrop-filter: blur(20px) saturate(150%);
   box-shadow: var(--shadow);
 }
 
@@ -1364,9 +1666,9 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
   gap: 7px;
-  margin-top: 20px;
+  margin-top: 18px;
+  padding-left: 38px;
 }
 
 .page-button {
@@ -1374,9 +1676,9 @@ textarea {
   height: 34px;
   padding: 0 8px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 9px 9px 9px 3px;
   color: var(--forest-800);
-  background: var(--paper-strong);
+  background: var(--glass-soft);
   font-weight: 700;
 }
 
@@ -1399,8 +1701,12 @@ textarea {
   margin-top: 24px;
   padding: 52px 24px 46px;
   border: 1px dashed var(--forest-300);
-  border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--moss) 36%, var(--paper));
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--leaf-corner);
+  background:
+    var(--leaf-veins),
+    linear-gradient(168deg, color-mix(in srgb, var(--moss) 44%, transparent), transparent 76%),
+    var(--glass-soft);
+  backdrop-filter: blur(12px) saturate(135%);
   text-align: center;
 }
 
@@ -1469,7 +1775,8 @@ textarea {
   height: 100%;
   overflow: hidden;
   border-left: 1px solid var(--line);
-  background: var(--paper-strong);
+  background: var(--leaf-veins), var(--glass-pop);
+  backdrop-filter: blur(22px) saturate(150%);
   box-shadow: -18px 0 50px rgb(2 19 10 / .18);
   transform: translateX(102%);
   transition: transform .24s cubic-bezier(.2, .7, .2, 1);
@@ -1717,9 +2024,12 @@ textarea {
   padding: 0;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--line));
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--leaf-corner);
   color: var(--ink);
-  background: var(--paper-strong);
+  /* the card inside carries the glass fill, so the dialog box itself has to
+     stay clear or it would paint over its own translucency */
+  background: transparent;
+  backdrop-filter: blur(22px) saturate(150%);
   box-shadow: 0 28px 80px rgb(2 19 10 / 28%);
 }
 
@@ -1734,7 +2044,10 @@ textarea {
 .confirm-dialog-card {
   overflow: hidden;
   border-radius: inherit;
-  background: linear-gradient(155deg, color-mix(in srgb, var(--paper-strong) 96%, var(--moss)), var(--paper-strong));
+  background:
+    var(--leaf-veins),
+    linear-gradient(155deg, color-mix(in srgb, var(--moss) 34%, transparent), transparent 62%),
+    var(--glass-pop);
 }
 
 .confirm-dialog-accent {
@@ -1836,9 +2149,10 @@ textarea {
   width: min(530px, calc(100% - 32px));
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--leaf-corner);
   color: var(--ink);
-  background: var(--paper-strong);
+  background: var(--leaf-veins), var(--glass-pop);
+  backdrop-filter: blur(22px) saturate(150%);
   box-shadow: var(--shadow);
 }
 
@@ -1918,9 +2232,10 @@ textarea {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-left: 4px solid var(--forest-500);
-  border-radius: 11px;
+  border-radius: 11px 11px 11px 3px;
   color: var(--ink);
-  background: var(--paper-strong);
+  background: var(--glass-pop);
+  backdrop-filter: blur(18px) saturate(150%);
   box-shadow: var(--shadow);
   font-size: .84rem;
   animation: toast-in .2s ease both;
@@ -1965,7 +2280,7 @@ textarea {
 :is([data-theme="dark"], [data-theme="nightglow"]) .branch-count,
 :is([data-theme="dark"], [data-theme="nightglow"]) .folder-pill,
 :is([data-theme="dark"], [data-theme="nightglow"]) .page-button,
-:is([data-theme="dark"], [data-theme="nightglow"]) .mobile-filter-toggle { color: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .band-tool { color: var(--forest-300); }
 
 :is([data-theme="dark"], [data-theme="nightglow"]) .status-badge.enabled { color: #bcecca; background: #163f29; }
 :is([data-theme="dark"], [data-theme="nightglow"]) .status-badge.disabled { color: #f2bbb5; background: #4a2927; }
@@ -1995,19 +2310,78 @@ textarea {
   background: color-mix(in srgb, var(--forest-900) 62%, transparent);
 }
 
+/* the band is the brightest surface on the page, so in the night palettes it
+   has to become a lit clearing rather than a white slab */
+:is([data-theme="dark"], [data-theme="nightglow"]) .canopy-band {
+  border-color: color-mix(in srgb, var(--forest-500) 30%, var(--line));
+  background:
+    var(--leaf-veins),
+    radial-gradient(126% 150% at 50% -32%, color-mix(in srgb, var(--forest-600) 30%, transparent), transparent 60%),
+    linear-gradient(172deg, color-mix(in srgb, var(--moss) 46%, transparent), transparent 68%),
+    var(--glass);
+  box-shadow:
+    0 18px 44px rgb(0 0 0 / 34%),
+    inset 0 1px 0 var(--glass-sheen);
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .band-halo {
+  background: radial-gradient(72% 120% at 22% -10%, color-mix(in srgb, var(--forest-400) 20%, transparent), transparent 62%);
+  opacity: .55;
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .band-crest { fill: var(--forest-600); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .crest-leaves circle:nth-child(3n) { fill: var(--forest-500); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .crest-leaves circle:nth-child(4n) { fill: var(--forest-700); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .band-sheet {
+  border-color: color-mix(in srgb, var(--forest-500) 26%, var(--line));
+  background:
+    var(--leaf-veins),
+    linear-gradient(168deg, color-mix(in srgb, var(--forest-900) 62%, transparent), transparent 78%),
+    var(--glass-soft);
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .active-chip,
+:is([data-theme="dark"], [data-theme="nightglow"]) .band-active-label { color: var(--forest-300); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .active-chip {
+  background: color-mix(in srgb, var(--forest-900) 66%, transparent);
+}
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .graft-pop-title,
+:is([data-theme="dark"], [data-theme="nightglow"]) .graft-pop-note { color: var(--forest-400); }
+
+/* the fluorescing canopy should also light its own crest and stem */
+[data-theme="nightglow"] .band-crest { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--forest-400) 62%, transparent)); }
+[data-theme="nightglow"] .band-stem,
+[data-theme="nightglow"] .limb-node,
+[data-theme="nightglow"] .leaf-glyph { box-shadow: 0 0 8px color-mix(in srgb, var(--forest-400) 58%, transparent); }
+[data-theme="nightglow"] .canopy-band { border-color: color-mix(in srgb, var(--forest-500) 42%, var(--line)); }
+
 /* --- responsive -------------------------------------------------------- */
 
+/* The old sheet had a single 900px breakpoint, which is why nothing looked
+   wrong until someone opened it on a 1660px monitor. The band is sized from
+   the wide end down instead. */
+@media (min-width: 1500px) {
+  .app-shell { --shell-width: 1180px; }
+  .canopy-band { padding: 22px 26px 20px; }
+}
+
+@media (min-width: 1900px) {
+  .app-shell { --shell-width: 1260px; padding-top: 40px; }
+}
+
+@media (max-width: 1180px) {
+  .app-shell { --shell-width: 100%; }
+}
+
 @media (max-width: 900px) {
-  .workspace { grid-template-columns: 1fr; }
-  .sidebar { position: static; grid-template-columns: 1fr 1.4fr; padding-left: 0; }
-  /* the trunk only reads correctly in the tall single-column layout */
-  .sidebar::before,
-  .sidebar::after,
-  .bough-node::before,
-  .bough-node::after { display: none; }
-  .sidebar-note { display: none; }
-  .sidebar-actions { grid-column: span 2; }
-  .canopy-card { align-self: start; }
+  .canopy-band { gap: 12px; padding: 17px 17px 16px; border-radius: 22px; }
+  .band-crest { left: 13px; width: calc(100% - 26px); }
+  .band-view { align-items: center; }
+  .canopy-total { padding-right: 30px; }
+  .canopy-rings { right: -26px; }
 }
 
 @media (max-width: 640px) {
@@ -2015,33 +2389,27 @@ textarea {
   .topbar { align-items: flex-start; flex-direction: column; margin-bottom: 22px; }
   .top-actions { width: 100%; justify-content: flex-start; }
   .top-actions .button-primary { margin-left: auto; }
-  .sidebar { grid-template-columns: 1fr; gap: 12px; }
-  .mobile-filter-toggle {
-    display: flex;
-    min-height: 48px;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 14px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-md);
-    color: var(--forest-800);
-    background: color-mix(in srgb, var(--paper-strong) 90%, var(--moss));
-    box-shadow: 0 8px 24px rgb(19 72 45 / 7%);
-    font-weight: 780;
-  }
-  .mobile-filter-toggle > span { display: inline-flex; align-items: center; gap: 7px; }
-  .mobile-filter-toggle > span > span { color: var(--forest-500); }
-  .mobile-filter-toggle strong { color: var(--forest-600); font-size: .78rem; }
-  .sidebar:not(.mobile-open) > :not(.mobile-filter-toggle) { display: none; }
-  .sidebar-actions { grid-column: auto; }
+  .graft-pop { right: auto; left: 0; width: min(252px, calc(100vw - 40px)); }
+
+  /* the crest and the stem both need room the phone layout does not have */
+  .band-crest { display: none; }
+  .band-stem { display: none; }
+  .canopy-band { border-radius: 18px; padding: 15px 14px 14px; }
+  .band-seek { gap: 8px; }
+  .search-field { flex: 1 1 100%; }
+  .band-tool { flex: 1 1 auto; justify-content: center; }
   .filter-grid { grid-template-columns: 1fr; }
-  .content-heading { align-items: start; flex-direction: column; }
-  .view-options { width: 100%; }
+  .band-limb { display: none; }
+  .band-view { width: 100%; }
   /* two selects share one row, the view buttons get a tidy full-width row */
   .view-field { flex: 1 1 calc(50% - 5px); }
   .view-field select { width: 100%; }
-  .view-buttons { flex: 1 1 100%; flex-wrap: wrap; }
-  .view-buttons > * { flex: 1 1 auto; justify-content: center; }
+  .view-split { display: none; }
+  .band-view .button { flex: 1 1 auto; justify-content: center; }
+  .tree-caption { padding-left: 24px; }
+  .tree-caption::before { left: 9px; width: 3px; }
+  .shell-note { padding-left: 24px; }
+  .pagination { padding-left: 24px; }
   .bulk-bar { align-items: stretch; flex-direction: column; }
   .bulk-controls { justify-content: stretch; }
   .bulk-controls > * { flex: 1 1 auto; }
@@ -2090,9 +2458,9 @@ textarea {
   50% { transform: rotate(.4deg); }
 }
 
-@keyframes drift {
-  0%, 100% { transform: translate3d(0, 0, 0); opacity: .5; }
-  50% { transform: translate3d(20px, -28px, 0); opacity: .9; }
+@keyframes shaftbreathe {
+  0%, 100% { opacity: .55; transform: translate3d(-14px, 0, 0); }
+  50% { opacity: 1; transform: translate3d(14px, 0, 0); }
 }
 
 @keyframes menu-pop-in {
@@ -2124,7 +2492,7 @@ textarea {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
   }
-  .mote,
+  .sky-shafts,
   .sky-tree { animation: none !important; }
   .firefly { animation: none !important; opacity: .5; }
 }

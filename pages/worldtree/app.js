@@ -3,9 +3,6 @@ const bridge = window.AstrBotPluginPage;
 const $ = (selector) => document.querySelector(selector);
 const refs = {
   appShell: $("#appShell"),
-  sidebar: $("#sidebar"),
-  mobileFilterToggle: $("#mobileFilterToggle"),
-  mobileFilterState: $("#mobileFilterState"),
   connection: $("#connectionState"),
   themeSwitch: $("#themeSwitch"),
   refresh: $("#refreshButton"),
@@ -17,6 +14,12 @@ const refs = {
   folder: $("#folderFilter"),
   tag: $("#tagFilter"),
   clearFilters: $("#clearFiltersButton"),
+  filterToggle: $("#filterToggle"),
+  filterSheet: $("#filterSheet"),
+  filterCount: $("#filterCount"),
+  activeFilters: $("#activeFilters"),
+  graftMenu: $("#graftMenu"),
+  graftToggle: $("#graftToggle"),
   sort: $("#sortSelect"),
   pageSize: $("#pageSizeSelect"),
   density: $("#densityButton"),
@@ -370,28 +373,35 @@ function statFilterButton(cell, extraClass) {
   return button;
 }
 
+function leafGlyph() {
+  const glyph = create("i", "leaf-glyph");
+  glyph.setAttribute("aria-hidden", "true");
+  return glyph;
+}
+
 function renderStats(stats) {
   state.stats = stats || {};
   refs.stats.replaceChildren();
 
   const total = statFilterButton(STAT_TOTAL, "canopy-total");
   total.append(
+    create("i", "canopy-rings", ""),
     create("strong", "", String(state.stats[STAT_TOTAL.key] ?? 0)),
     create("span", "", STAT_TOTAL.label),
-    create("i", "canopy-rings", ""),
   );
   refs.stats.append(total);
 
-  const leaves = create("div", "leaf-row");
   for (const cell of STAT_CELLS) {
-    const value = String(state.stats[cell.key] ?? 0);
+    const value = state.stats[cell.key] ?? 0;
+    // A "文件夹 0" chip is noise on a flat library, so read-only zeroes stay hidden.
+    if (!cell.status && !value) continue;
     const node = cell.status
       ? statFilterButton(cell, "leaf-chip")
       : create("div", "leaf-chip is-static");
-    node.append(create("span", "", cell.label), create("strong", "", value));
-    leaves.append(node);
+    if (!value) node.classList.add("is-empty");
+    node.append(leafGlyph(), create("span", "", cell.label), create("strong", "", String(value)));
+    refs.stats.append(node);
   }
-  refs.stats.append(leaves);
 }
 
 /* -------------------------------------------------------------- grouping */
@@ -672,6 +682,7 @@ function renderEntries() {
   if (totalPages > 1) captions.push(`第 ${state.pagination.page || 1} / ${totalPages} 页`);
   refs.resultCaption.textContent = captions.join(" · ");
 
+  renderActiveFilters();
   renderPagination();
   renderBulkBar();
   renderSelectPageButton();
@@ -745,10 +756,97 @@ function toggleCurrentPageSelection() {
   renderEntries();
 }
 
-function toggleMobileFilters() {
-  const isOpen = refs.sidebar.classList.toggle("mobile-open");
-  refs.mobileFilterToggle.setAttribute("aria-expanded", String(isOpen));
-  refs.mobileFilterState.textContent = isOpen ? "收起" : "展开";
+/* The four dropdowns live in a sheet that stays folded until asked for. The
+   chips rendered below the band always echo what is active, so a folded sheet
+   can never be the reason a short list looks unexplained. */
+function setFilterSheet(open) {
+  refs.filterSheet.hidden = !open;
+  refs.filterToggle.setAttribute("aria-expanded", String(open));
+  refs.filterToggle.classList.toggle("is-open", open);
+}
+
+function toggleFilterSheet() {
+  setFilterSheet(refs.filterSheet.hidden);
+}
+
+function setGraftMenu(open) {
+  refs.graftMenu.classList.toggle("is-open", open);
+  refs.graftToggle.setAttribute("aria-expanded", String(open));
+}
+
+function activeFilterChips() {
+  const chips = [];
+  if (state.filters.q) {
+    chips.push({
+      label: "搜索",
+      value: `“${state.filters.q}”`,
+      clear: () => {
+        refs.search.value = "";
+      },
+    });
+  }
+  if (state.filters.status && state.filters.status !== "all") {
+    chips.push({
+      label: "状态",
+      value: refs.status.selectedOptions[0]?.textContent || state.filters.status,
+      clear: () => {
+        refs.status.value = "all";
+      },
+    });
+  }
+  if (state.filters.template) {
+    chips.push({
+      label: "类型",
+      value: templateLabel(state.filters.template),
+      clear: () => {
+        refs.templateFilter.value = "";
+      },
+    });
+  }
+  if (state.filters.folder) {
+    chips.push({
+      label: "文件夹",
+      value: state.filters.folder,
+      clear: () => {
+        refs.folder.value = "";
+      },
+    });
+  }
+  if (state.filters.tag) {
+    chips.push({
+      label: "标签",
+      value: `#${state.filters.tag}`,
+      clear: () => {
+        refs.tag.value = "";
+      },
+    });
+  }
+  return chips;
+}
+
+function renderActiveFilters() {
+  const chips = activeFilterChips();
+  refs.filterCount.hidden = chips.length === 0;
+  refs.filterCount.textContent = String(chips.length);
+  refs.filterToggle.classList.toggle("has-filters", chips.length > 0);
+  refs.clearFilters.disabled = chips.length === 0;
+  refs.activeFilters.replaceChildren();
+  refs.activeFilters.hidden = chips.length === 0;
+  if (!chips.length) return;
+  refs.activeFilters.append(create("span", "band-active-label", "生效条件"));
+  for (const chip of chips) {
+    const node = create("button", "active-chip");
+    node.type = "button";
+    node.title = `移除“${chip.label}”筛选`;
+    const cross = create("i", "active-chip-x", "\u00d7");
+    cross.setAttribute("aria-hidden", "true");
+    node.append(create("span", "active-chip-key", chip.label), create("strong", "", chip.value), cross);
+    node.addEventListener("click", () => {
+      chip.clear();
+      updateFilters();
+    });
+    refs.activeFilters.append(node);
+  }
 }
 
 function updateBulkValueState() {
@@ -1371,7 +1469,14 @@ function bindEvents() {
     if (option) setThemeMode(option.dataset.themeMode);
   });
   refs.collapseAll.addEventListener("click", toggleAllBranches);
-  refs.mobileFilterToggle.addEventListener("click", toggleMobileFilters);
+  refs.filterToggle.addEventListener("click", toggleFilterSheet);
+  refs.graftToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setGraftMenu(!refs.graftMenu.classList.contains("is-open"));
+  });
+  refs.graftMenu.addEventListener("click", (event) => {
+    if (event.target.closest(".menu-item")) setGraftMenu(false);
+  });
   refs.clearFilters.addEventListener("click", () => {
     refs.search.value = "";
     refs.status.value = "all";
@@ -1464,6 +1569,7 @@ function bindEvents() {
 
   document.addEventListener("click", (event) => {
     if (!(event.target instanceof Element) || !event.target.closest(".entry-menu")) closeAllMenus();
+    if (!(event.target instanceof Element) || !event.target.closest(".graft-menu")) setGraftMenu(false);
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1474,6 +1580,10 @@ function bindEvents() {
         return;
       }
       if (refs.importDialog.open) return;
+      if (refs.graftMenu.classList.contains("is-open")) {
+        setGraftMenu(false);
+        return;
+      }
       if (refs.list.querySelector(".entry-menu.is-open")) {
         closeAllMenus();
         return;

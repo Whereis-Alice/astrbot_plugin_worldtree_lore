@@ -50,10 +50,9 @@
         <path class="sky-root" d="M800 760Q879 799 946 859M800 760Q715 783 625 780M946 859Q1006 855 1067 859M946 859Q978 898 1011 938M625 780Q584 831 555 890M625 780Q574 776 526 756M800 760Q814 820 811 884M800 760Q781 819 771 881M1067 859Q1099 837 1135 825M1067 859Q1108 873 1144 896M1011 938Q1042 955 1068 980M1011 938Q1012 968 1004 998M555 890Q550 932 550 975M555 890Q512 898 468 898M526 756Q500 775 474 794M526 756Q499 741 475 719M811 884Q841 917 861 959M811 884Q809 929 813 975M771 881Q777 917 785 953M771 881Q739 902 702 916" />
         <use class="sky-leaves-front" href="#skyLeaves" />
       </svg>
+      <div class="sky-shafts"></div>
       <div class="sky-mist"></div>
-      <span class="mote mote-a"></span>
-      <span class="mote mote-b"></span>
-      <span class="mote mote-c"></span>
+      <div class="sky-loam"></div>
       <div class="fireflies">
         <span class="firefly firefly-1"></span>
         <span class="firefly firefly-2"></span>
@@ -100,6 +99,24 @@
               <span aria-hidden="true">✦</span>
             </button>
           </div>
+          <div class="graft-menu" id="graftMenu">
+            <button class="button button-ghost graft-trigger" id="graftToggle" type="button" aria-haspopup="menu" aria-expanded="false" title="导入与导出">
+              <span aria-hidden="true">⇅</span> 移植<span class="graft-caret" aria-hidden="true"></span>
+            </button>
+            <div class="graft-pop" role="menu" aria-label="移植与留种">
+              <p class="graft-pop-title">移植与留种</p>
+              <button class="menu-item" id="importButton" type="button" role="menuitem">
+                <span aria-hidden="true">⇧</span> 导入世界书
+              </button>
+              <button class="menu-item" id="exportYamlButton" type="button" role="menuitem">
+                <span aria-hidden="true">⇩</span> 导出 YAML 备份
+              </button>
+              <button class="menu-item" id="exportJsonButton" type="button" role="menuitem">
+                <span aria-hidden="true">⇩</span> 导出 JSON 备份
+              </button>
+              <p class="graft-pop-note">导出会包含当前全部条目；导入支持 SillyTavern / 酒馆 与本插件自己的格式。</p>
+            </div>
+          </div>
           <button class="button button-ghost" id="refreshButton" type="button" title="重新读取条目">
             <span aria-hidden="true">↻</span> 刷新
           </button>
@@ -109,40 +126,45 @@
         </div>
       </header>
 
-      <div class="workspace">
-        <aside class="sidebar" id="sidebar" aria-label="筛选和概览">
-          <button class="mobile-filter-toggle" id="mobileFilterToggle" type="button" aria-expanded="false">
-            <span><span aria-hidden="true">⌕</span> 筛选与概览</span>
-            <strong id="mobileFilterState">展开</strong>
-          </button>
+      <main class="content">
+        <section class="canopy-band" aria-label="检索、筛选与视图">
+          <svg class="band-crest" viewBox="0 0 1200 40" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <rect class="crest-base" x="0" y="0" width="1200" height="13"/><g class="crest-leaves"><circle cx="-16" cy="10.7" r="27.2"/><circle cx="4" cy="6.6" r="16.7"/><circle cx="27" cy="14.1" r="20.6"/><circle cx="46" cy="6.6" r="16.0"/><circle cx="66" cy="16.0" r="22.4"/><circle cx="95" cy="11.8" r="18.4"/><circle cx="108" cy="7.9" r="16.4"/><circle cx="125" cy="11.9" r="21.3"/><circle cx="148" cy="11.7" r="17.0"/><circle cx="165" cy="8.3" r="21.6"/><circle cx="188" cy="11.5" r="25.5"/><circle cx="217" cy="9.4" r="17.5"/><circle cx="232" cy="13.8" r="18.1"/><circle cx="251" cy="4.3" r="16.9"/><circle cx="281" cy="12.8" r="24.7"/><circle cx="306" cy="5.2" r="22.0"/><circle cx="323" cy="3.0" r="18.0"/><circle cx="354" cy="10.7" r="23.9"/><circle cx="367" cy="7.3" r="18.5"/><circle cx="384" cy="9.7" r="19.1"/><circle cx="407" cy="14.7" r="21.9"/><circle cx="434" cy="8.6" r="17.2"/><circle cx="451" cy="8.6" r="23.9"/><circle cx="475" cy="8.7" r="12.3"/><circle cx="504" cy="12.4" r="26.4"/><circle cx="522" cy="9.6" r="20.4"/><circle cx="534" cy="9.3" r="13.5"/><circle cx="561" cy="11.8" r="22.6"/><circle cx="587" cy="11.0" r="17.2"/><circle cx="599" cy="11.6" r="20.4"/><circle cx="627" cy="16.0" r="24.0"/><circle cx="642" cy="7.9" r="15.6"/><circle cx="662" cy="10.8" r="23.4"/><circle cx="691" cy="4.1" r="18.1"/><circle cx="717" cy="13.4" r="23.1"/><circle cx="747" cy="8.7" r="20.3"/><circle cx="769" cy="9.0" r="14.3"/><circle cx="782" cy="14.0" r="22.8"/><circle cx="803" cy="7.2" r="20.7"/><circle cx="827" cy="12.9" r="18.2"/><circle cx="848" cy="13.8" r="22.9"/><circle cx="868" cy="6.7" r="18.2"/><circle cx="890" cy="12.5" r="18.8"/><circle cx="907" cy="6.0" r="14.8"/><circle cx="931" cy="11.3" r="27.0"/><circle cx="955" cy="11.2" r="18.8"/><circle cx="984" cy="9.0" r="12.6"/><circle cx="999" cy="10.9" r="26.1"/><circle cx="1016" cy="8.4" r="19.4"/><circle cx="1037" cy="14.1" r="18.3"/><circle cx="1059" cy="16.7" r="22.2"/><circle cx="1087" cy="9.7" r="13.2"/><circle cx="1111" cy="13.0" r="20.7"/><circle cx="1130" cy="6.4" r="14.3"/><circle cx="1158" cy="10.6" r="24.5"/><circle cx="1175" cy="10.2" r="19.7"/><circle cx="1202" cy="8.6" r="11.9"/></g>
+          </svg>
+          <span class="band-halo" aria-hidden="true"></span>
 
-          <section class="canopy-card bough-node" aria-labelledby="canopyHeading">
-            <div class="card-head">
-              <h2 id="canopyHeading">树冠概览</h2>
-            </div>
-            <div class="canopy" id="statsGrid" aria-live="polite"></div>
-            <p class="canopy-hint">点击叶片即可按该条件筛选。</p>
-          </section>
-
-          <section class="filter-section bough-node" aria-labelledby="filterHeading">
-            <div class="section-heading">
-              <h2 id="filterHeading">定位条目</h2>
-              <button class="text-button" id="clearFiltersButton" type="button">清除</button>
-            </div>
-            <label class="field-label" for="searchInput">搜索</label>
+          <div class="band-seek">
             <div class="search-field">
-              <span aria-hidden="true">⌕</span>
+              <span class="search-glyph" aria-hidden="true">⌕</span>
               <input
                 id="searchInput"
                 type="search"
                 maxlength="200"
-                placeholder="搜索名称或内容…"
-                title="同时匹配条目名称、正文、标签与关键词"
+                placeholder="搜索条目名称、正文、标签或关键词…"
+                title="同时匹配条目名称、正文、标签与关键词；按 / 可随时聚焦"
                 autocomplete="off"
               />
               <kbd aria-hidden="true">/</kbd>
             </div>
+            <button
+              class="band-tool"
+              id="filterToggle"
+              type="button"
+              aria-expanded="false"
+              aria-controls="filterSheet"
+              title="展开状态、模板、文件夹与标签筛选"
+            >
+              <span class="band-tool-glyph" aria-hidden="true">⚘</span>
+              <span>筛选</span>
+              <span class="band-tool-count" id="filterCount" hidden>0</span>
+              <span class="band-caret" aria-hidden="true"></span>
+            </button>
+            <button class="text-button" id="clearFiltersButton" type="button" title="清空搜索与全部筛选条件">
+              清除
+            </button>
+          </div>
 
+          <div class="band-sheet" id="filterSheet" hidden>
             <div class="filter-grid">
               <div class="filter-field">
                 <label class="field-label" for="statusFilter">状态</label>
@@ -155,7 +177,7 @@
                 </select>
               </div>
               <div class="filter-field">
-                <label class="field-label" for="templateFilter">模板</label>
+                <label class="field-label" for="templateFilter">条目类型</label>
                 <select id="templateFilter"><option value="">全部</option></select>
               </div>
               <div class="filter-field">
@@ -167,115 +189,109 @@
                 <select id="tagFilter"><option value="">全部</option></select>
               </div>
             </div>
-          </section>
+          </div>
 
-          <section class="sidebar-actions bough-node" aria-labelledby="transferHeading">
-            <div class="section-heading">
-              <h2 id="transferHeading">移植与留种</h2>
-            </div>
-            <button class="button button-secondary" id="importButton" type="button">
-              <span aria-hidden="true">⇧</span> 导入世界书
-            </button>
-            <div class="export-row">
-              <button class="button button-secondary" id="exportYamlButton" type="button">导出 YAML</button>
-              <button class="button button-secondary" id="exportJsonButton" type="button">JSON</button>
-            </div>
-          </section>
+          <div class="band-limb" aria-hidden="true">
+            <span class="limb-line"></span>
+            <span class="limb-node"></span>
+            <span class="limb-line"></span>
+          </div>
 
-          <p class="sidebar-note">
-            搜索、排序与分页都在服务端完成；条目再多也不必逐个展开。按 <kbd>/</kbd> 搜索，按 <kbd>N</kbd> 新建。
-          </p>
-        </aside>
+          <div class="canopy" id="statsGrid" aria-live="polite"></div>
 
-        <main class="content">
-          <section class="content-heading">
-            <div class="content-title">
-              <p class="eyebrow" id="resultCaption">条目列表</p>
-              <h2 id="resultTitle">正在读取枝叶…</h2>
-            </div>
-            <div class="view-options">
-              <label class="view-field" for="sortSelect">
-                <span>排序</span>
-                <select id="sortSelect">
-                  <option value="priority">优先级（小到大）</option>
-                  <option value="priority_desc">优先级（大到小）</option>
-                  <option value="template">条目类型（模板）</option>
-                  <option value="folder">文件夹</option>
-                  <option value="name">名称 A→Z</option>
-                  <option value="updated">最近更新</option>
-                  <option value="enabled">启用状态</option>
-                </select>
-              </label>
-              <label class="view-field" for="pageSizeSelect">
-                <span>每页</span>
-                <select id="pageSizeSelect">
-                  <option value="20">20</option>
-                  <option value="30" selected>30</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-              </label>
-              <div class="view-buttons">
-                <button class="button button-secondary button-compact" id="densityButton" type="button" aria-pressed="false">
-                  紧凑视图
-                </button>
-                <button class="button button-secondary button-compact" id="collapseAllButton" type="button">
-                  收起全部
-                </button>
-                <button class="button button-secondary button-compact" id="selectPageButton" type="button" disabled>
-                  选择本页
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section class="bulk-bar" id="bulkBar" hidden aria-label="批量操作">
-            <strong id="selectedCount">已选择 0 项</strong>
-            <div class="bulk-controls">
-              <select id="bulkAction" aria-label="批量操作">
-                <option value="set_enabled_true">批量启用</option>
-                <option value="set_enabled_false">批量停用</option>
-                <option value="set_folder">移动到文件夹</option>
-                <option value="add_tag">添加标签</option>
-                <option value="remove_tag">移除标签</option>
-                <option value="modernise_keywords">关键词转为新模式</option>
-                <option value="delete">删除所选条目</option>
+          <div class="band-view">
+            <label class="view-field" for="sortSelect">
+              <span>排序</span>
+              <select id="sortSelect">
+                <option value="priority">优先级（小到大）</option>
+                <option value="priority_desc">优先级（大到小）</option>
+                <option value="template">条目类型（模板）</option>
+                <option value="folder">文件夹</option>
+                <option value="name">名称 A→Z</option>
+                <option value="updated">最近更新</option>
+                <option value="enabled">启用状态</option>
               </select>
-              <input id="bulkValue" type="text" maxlength="80" placeholder="文件夹或标签" />
-              <button class="button button-secondary" id="bulkApplyButton" type="button">应用</button>
-              <button class="button button-ghost button-compact" id="exportSelectedButton" type="button">导出所选</button>
-              <button class="text-button" id="clearSelectionButton" type="button">取消选择</button>
-            </div>
-          </section>
-
-          <div class="tree" id="tree">
-            <span class="tree-trunk" aria-hidden="true"></span>
-            <div class="branch-list" id="entryList" aria-label="世界书条目" aria-busy="false"></div>
-            <svg class="tree-roots" viewBox="0 0 240 54" aria-hidden="true" focusable="false">
-              <path d="M120 0v20" />
-              <path d="M120 20c0 12-26 14-44 20M120 20c0 12 26 14 44 20" />
-              <path d="M120 20c-4 14-32 20-56 22M120 20c4 14 32 20 56 22" />
-              <path d="M120 20v30" />
-            </svg>
+            </label>
+            <label class="view-field" for="pageSizeSelect">
+              <span>每页</span>
+              <select id="pageSizeSelect">
+                <option value="20">20</option>
+                <option value="30" selected>30</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+            <span class="view-split" aria-hidden="true"></span>
+            <button class="button button-secondary button-compact" id="densityButton" type="button" aria-pressed="false">
+              紧凑视图
+            </button>
+            <button class="button button-secondary button-compact" id="collapseAllButton" type="button">
+              收起全部
+            </button>
+            <button class="button button-secondary button-compact" id="selectPageButton" type="button" disabled>
+              选择本页
+            </button>
           </div>
 
-          <div class="empty-state" id="emptyState" hidden>
-            <svg class="empty-tree" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
-              <path d="M48 86V44" class="trunk" />
-              <path d="M48 62 30 48M48 56l18-14M48 44 36 30" class="branches" />
-              <circle cx="28" cy="45" r="11" class="leaf leaf-a" />
-              <circle cx="68" cy="39" r="12" class="leaf leaf-b" />
-              <circle cx="35" cy="27" r="10" class="leaf leaf-c" />
-              <circle cx="58" cy="22" r="9" class="leaf leaf-a" />
-              <path d="M30 86h36" class="ground" />
-            </svg>
-            <h3>这里还没有枝叶</h3>
-            <p>新建第一个条目，或导入已有的 JSON/YAML 世界书。</p>
-            <button class="button button-primary" id="emptyCreateButton" type="button">新建条目</button>
+          <div class="band-active" id="activeFilters" hidden aria-live="polite"></div>
+          <span class="band-stem" aria-hidden="true"></span>
+        </section>
+
+        <div class="tree-caption">
+          <h2 id="resultTitle">正在读取枝叶…</h2>
+          <p class="tree-caption-note" id="resultCaption">条目列表</p>
+        </div>
+
+        <section class="bulk-bar" id="bulkBar" hidden aria-label="批量操作">
+          <strong id="selectedCount">已选择 0 项</strong>
+          <div class="bulk-controls">
+            <select id="bulkAction" aria-label="批量操作">
+              <option value="set_enabled_true">批量启用</option>
+              <option value="set_enabled_false">批量停用</option>
+              <option value="set_folder">移动到文件夹</option>
+              <option value="add_tag">添加标签</option>
+              <option value="remove_tag">移除标签</option>
+              <option value="modernise_keywords">关键词转为新模式</option>
+              <option value="delete">删除所选条目</option>
+            </select>
+            <input id="bulkValue" type="text" maxlength="80" placeholder="文件夹或标签" />
+            <button class="button button-secondary" id="bulkApplyButton" type="button">应用</button>
+            <button class="button button-ghost button-compact" id="exportSelectedButton" type="button">导出所选</button>
+            <button class="text-button" id="clearSelectionButton" type="button">取消选择</button>
           </div>
-          <nav class="pagination" id="pagination" aria-label="条目分页"></nav>
-        </main>
-      </div>
+        </section>
+
+        <div class="tree" id="tree">
+          <span class="tree-trunk" aria-hidden="true"></span>
+          <div class="branch-list" id="entryList" aria-label="世界书条目" aria-busy="false"></div>
+          <svg class="tree-roots" viewBox="0 0 240 54" aria-hidden="true" focusable="false">
+            <path d="M120 0v20" />
+            <path d="M120 20c0 12-26 14-44 20M120 20c0 12 26 14 44 20" />
+            <path d="M120 20c-4 14-32 20-56 22M120 20c4 14 32 20 56 22" />
+            <path d="M120 20v30" />
+          </svg>
+        </div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <svg class="empty-tree" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+            <path d="M48 86V44" class="trunk" />
+            <path d="M48 62 30 48M48 56l18-14M48 44 36 30" class="branches" />
+            <circle cx="28" cy="45" r="11" class="leaf leaf-a" />
+            <circle cx="68" cy="39" r="12" class="leaf leaf-b" />
+            <circle cx="35" cy="27" r="10" class="leaf leaf-c" />
+            <circle cx="58" cy="22" r="9" class="leaf leaf-a" />
+            <path d="M30 86h36" class="ground" />
+          </svg>
+          <h3>这里还没有枝叶</h3>
+          <p>新建第一个条目，或导入已有的 JSON/YAML 世界书。</p>
+          <button class="button button-primary" id="emptyCreateButton" type="button">新建条目</button>
+        </div>
+        <nav class="pagination" id="pagination" aria-label="条目分页"></nav>
+
+        <p class="shell-note">
+          搜索、排序与分页都在服务端完成；条目再多也不必逐个展开。按 <kbd>/</kbd> 搜索，按 <kbd>N</kbd> 新建。
+        </p>
+      </main>
     </div>
 
     <aside class="editor-drawer" id="editorDrawer" aria-label="条目编辑器" aria-hidden="true">
