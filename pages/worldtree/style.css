@@ -184,27 +184,28 @@ kbd {
     linear-gradient(180deg, rgb(223 241 224 / .58), rgb(223 241 224 / 0) 46%);
 }
 
-/* the tree is meant to fill the viewport: the crown runs off the top edge and
-   the root system off both sides, so the page really does sit inside it */
+/* The tree is scaled to cover, not to fit: 'slice' on the SVG lets the crown
+   sit against the top edge while the trunk runs straight past the bottom of the
+   viewport, so the page reads as standing at the foot of something enormous
+   whose base you never see. 'meet' would shrink the whole tree into view and
+   that is exactly the postcard look we are trying to avoid. */
 .sky-tree {
   position: absolute;
-  left: 50%;
-  bottom: -9vh;
-  translate: -50% 0;
-  width: max(1180px, 116vw, 104vh);
-  height: auto;
-  opacity: .13;
-  transform-origin: 50% 96%;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 118vh;
+  opacity: .2;
+  transform-origin: 50% 100%;
   will-change: transform;
   animation: sway 34s ease-in-out infinite;
 }
 
-/* on phones a 1180px tree would only show two fat branches, so pull the scale
-   back until the silhouette reads as a whole tree again */
+/* under 'slice' a narrow viewport crops the canopy sideways, so gain the height
+   back instead of shrinking: a taller box keeps more of the crown in frame */
 @media (max-width: 720px) {
   .sky-tree {
-    bottom: -6vh;
-    width: max(860px, 132vw);
+    height: 132vh;
   }
 }
 
@@ -212,30 +213,64 @@ kbd {
 .sky-leaves { fill: url(#skyLeaf); }
 
 .sky-leaves-front {
-  opacity: .5;
+  opacity: .62;
   translate: 0 -16px;
 }
 
 #skyCrown .stop-core { stop-color: var(--forest-500); stop-opacity: .34; }
 #skyCrown .stop-mid { stop-color: var(--forest-500); stop-opacity: .18; }
 #skyCrown .stop-edge { stop-color: var(--forest-500); stop-opacity: 0; }
-#skyLeaf .stop-core { stop-color: var(--forest-400); stop-opacity: .9; }
-#skyLeaf .stop-mid { stop-color: var(--forest-500); stop-opacity: .45; }
+#skyLeaf .stop-core { stop-color: var(--forest-400); stop-opacity: 1; }
+#skyLeaf .stop-mid { stop-color: var(--forest-500); stop-opacity: .62; }
 #skyLeaf .stop-edge { stop-color: var(--forest-500); stop-opacity: 0; }
+
+/* A drawn column rather than a thick stroke: the trunk has to widen on the way
+   down and grow buttress roots at the foot, which a single round-capped line
+   cannot express. It is drawn well below the viewport on purpose. */
+.sky-trunk { fill: url(#skyTrunk); }
+.sky-buttress { fill: var(--forest-900); }
+
+#skyTrunk .stop-top { stop-color: var(--forest-600); stop-opacity: .85; }
+#skyTrunk .stop-foot { stop-color: var(--forest-900); stop-opacity: 1; }
+
+/* just enough grain to keep a 400px-wide column from looking like a bar */
+.sky-bark {
+  fill: none;
+  stroke: var(--forest-600);
+  stroke-width: 5;
+  stroke-linecap: round;
+  opacity: .42;
+}
 
 .sky-limb,
 .sky-root {
   fill: none;
-  stroke: var(--forest-800);
+  stroke: var(--forest-700);
   stroke-linecap: round;
 }
 
-.sky-limb-1 { stroke-width: 44; }
-.sky-limb-2 { stroke-width: 25; }
-.sky-limb-3 { stroke-width: 14.5; }
-.sky-limb-4 { stroke-width: 8.5; }
-.sky-limb-5 { stroke-width: 5; }
+.sky-limb-2 { stroke-width: 38; }
+.sky-limb-3 { stroke-width: 19; }
+.sky-limb-4 { stroke-width: 10.5; }
+.sky-limb-5 { stroke-width: 5.5; }
 .sky-root { stroke-width: 11; opacity: .6; }
+
+/* Aerial roots. The content column sits in the middle of the screen, so the
+   trunk is mostly hidden behind it; these hang down the left and right gutters,
+   which is the only place a viewer can actually read the tree's scale. */
+.sky-tendril {
+  fill: none;
+  stroke: var(--forest-700);
+  stroke-linecap: round;
+  opacity: .74;
+}
+
+.sky-tendril-a { stroke-width: 13; }
+.sky-tendril-b { stroke-width: 9; }
+.sky-tendril-c { stroke-width: 6; }
+.sky-tendril-leaves { fill: var(--forest-500); opacity: .5; }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-tendril { opacity: .82; }
 
 /* Sunlight falling through the canopy. This fills the upper corners that the
    crown alone leaves empty, and it is the reason the old drifting blobs could
@@ -258,23 +293,22 @@ kbd {
 .sky-mist {
   position: absolute;
   inset: auto -6% -2% -6%;
-  height: 30vh;
+  height: 18vh;
   background: linear-gradient(
     180deg,
     rgb(0 0 0 / 0),
-    color-mix(in srgb, var(--paper) 32%, transparent) 52%,
-    color-mix(in srgb, var(--paper) 72%, transparent)
+    color-mix(in srgb, var(--paper) 18%, transparent) 54%,
+    color-mix(in srgb, var(--paper) 46%, transparent)
   );
 }
 
-/* damp earth for the roots to disappear into along the bottom edge */
+/* A depth vignette, not a floor. The trunk has to look like it continues past
+   the bottom edge, so nothing down here may suggest ground. */
 .sky-loam {
   position: absolute;
   inset: auto 0 0 0;
-  height: 24vh;
-  background:
-    radial-gradient(126% 100% at 50% 100%, color-mix(in srgb, var(--forest-800) 15%, transparent) 0 40%, transparent 78%),
-    linear-gradient(180deg, transparent, color-mix(in srgb, var(--forest-700) 8%, transparent));
+  height: 14vh;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--forest-800) 9%, transparent));
 }
 
 :is([data-theme="dark"], [data-theme="nightglow"]) .sky {
@@ -290,6 +324,19 @@ kbd {
 
 :is([data-theme="dark"], [data-theme="nightglow"]) .sky-limb,
 :is([data-theme="dark"], [data-theme="nightglow"]) .sky-root { stroke: var(--forest-700); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-trunk,
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-buttress { fill: var(--forest-700); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) #skyTrunk .stop-top { stop-color: var(--forest-700); }
+:is([data-theme="dark"], [data-theme="nightglow"]) #skyTrunk .stop-foot { stop-color: var(--forest-700); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-bark { stroke: var(--forest-500); opacity: .32; }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .leaf-mote {
+  --mote-alpha: .3;
+  background: var(--forest-400);
+}
 
 :is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-core { stop-opacity: .34; }
 :is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-mid { stop-opacity: .2; }
@@ -331,6 +378,28 @@ kbd {
 
 [data-theme="nightglow"] .sky-root { opacity: .8; }
 
+[data-theme="nightglow"] .sky-tendril { stroke: #0a2231; opacity: .8; }
+[data-theme="nightglow"] .sky-tendril-leaves { fill: var(--forest-300); opacity: .5; }
+
+/* silhouette, matching the limbs, so the fluorescing canopy stays the light source */
+[data-theme="nightglow"] .sky-buttress { fill: #0c2b38; }
+
+[data-theme="nightglow"] #skyTrunk .stop-top { stop-color: #114052; }
+[data-theme="nightglow"] #skyTrunk .stop-foot { stop-color: #071c27; }
+
+/* sap running up the bark; the one place the night theme paints light on wood */
+[data-theme="nightglow"] .sky-bark {
+  stroke: var(--forest-300);
+  stroke-width: 4;
+  opacity: .5;
+}
+
+[data-theme="nightglow"] .leaf-mote {
+  --mote-alpha: .5;
+  background: var(--forest-300);
+  box-shadow: 0 0 7px rgb(47 210 164 / .45);
+}
+
 [data-theme="nightglow"] #skyCrown .stop-core { stop-color: var(--forest-500); stop-opacity: .3; }
 [data-theme="nightglow"] #skyCrown .stop-mid { stop-color: var(--forest-600); stop-opacity: .17; }
 [data-theme="nightglow"] #skyLeaf .stop-core { stop-color: var(--forest-300); stop-opacity: .95; }
@@ -354,6 +423,37 @@ kbd {
     transparent 104px 188px
   );
 }
+
+/* --- leaves coming loose from the canopy -------------------------------- */
+
+/* Kept crisp and leaf-shaped on purpose. An earlier pass used blurred dots for
+   this and they read as dirt on the glass; a hard-edged leaf silhouette reads
+   as a leaf even at 9px. Present in every theme, unlike the fireflies. */
+.sky-drift {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.leaf-mote {
+  --mote-alpha: .34;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 62% 0 62% 0;
+  background: var(--forest-500);
+  opacity: 0;
+  will-change: transform;
+  animation: leaffall 34s linear infinite;
+}
+
+.leaf-mote-1 { top: -4%; left: 12%; width: 11px; height: 11px; animation-duration: 38s; animation-delay: -3s; }
+.leaf-mote-2 { top: -6%; left: 29%; width: 8px; height: 8px; animation-duration: 46s; animation-delay: -19s; }
+.leaf-mote-3 { top: -3%; left: 44%; width: 12px; height: 12px; animation-duration: 41s; animation-delay: -31s; }
+.leaf-mote-4 { top: -7%; left: 58%; width: 9px; height: 9px; animation-duration: 52s; animation-delay: -11s; }
+.leaf-mote-5 { top: -4%; left: 71%; width: 10px; height: 10px; animation-duration: 36s; animation-delay: -25s; }
+.leaf-mote-6 { top: -6%; left: 86%; width: 8px; height: 8px; animation-duration: 49s; animation-delay: -6s; }
+.leaf-mote-7 { top: -5%; left: 4%; width: 9px; height: 9px; animation-duration: 43s; animation-delay: -37s; }
 
 /* spores drifting out of the canopy; only the night theme shows them */
 .fireflies { display: none; }
@@ -2458,6 +2558,18 @@ textarea {
   50% { transform: rotate(.4deg); }
 }
 
+/* Down and slightly across, tumbling as it goes. The horizontal drift is small
+   on purpose: anything larger and the leaves look blown rather than falling. */
+@keyframes leaffall {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: var(--mote-alpha); }
+  25% { transform: translate3d(26px, 32vh, 0) rotate(120deg); }
+  50% { transform: translate3d(-14px, 62vh, 0) rotate(240deg); }
+  75% { transform: translate3d(30px, 92vh, 0) rotate(370deg); }
+  92% { opacity: var(--mote-alpha); }
+  100% { transform: translate3d(6px, 122vh, 0) rotate(480deg); opacity: 0; }
+}
+
 @keyframes shaftbreathe {
   0%, 100% { opacity: .55; transform: translate3d(-14px, 0, 0); }
   50% { opacity: 1; transform: translate3d(14px, 0, 0); }
@@ -2494,5 +2606,6 @@ textarea {
   }
   .sky-shafts,
   .sky-tree { animation: none !important; }
+  .leaf-mote { animation: none !important; opacity: 0; }
   .firefly { animation: none !important; opacity: .5; }
 }
