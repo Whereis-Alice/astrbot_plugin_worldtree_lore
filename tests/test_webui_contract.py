@@ -217,5 +217,29 @@ class WebUiContractTests(unittest.TestCase):
         self.assertEqual(styles.count('[data-theme="dark"]'), shared + 1)
 
 
+    def test_plugin_logo_is_a_square_png(self) -> None:
+        logo = ROOT / "logo.png"
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+
+        # AstrBot only picks up a file literally named logo.png in the plugin
+        # root, and the plugin card renders it as a 64x64 square, so anything
+        # non-square would be cropped.
+        self.assertTrue(logo.is_file())
+        header = logo.read_bytes()[:24]
+        self.assertEqual(header[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(header[12:16], b"IHDR")
+        width = int.from_bytes(header[16:20], "big")
+        height = int.from_bytes(header[20:24], "big")
+        self.assertEqual(width, height)
+        self.assertGreaterEqual(width, 256)
+
+        # The vector source stays in the repo so the icon can be recoloured
+        # without reverse-engineering the bitmap.
+        self.assertTrue((ROOT / "assets" / "logo.svg").is_file())
+        self.assertIn('href="./favicon.svg"', markup)
+
+
 if __name__ == "__main__":
     unittest.main()
