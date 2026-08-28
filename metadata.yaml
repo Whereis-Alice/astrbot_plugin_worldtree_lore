@@ -1,7 +1,7 @@
 name: astrbot_plugin_worldtree_lore
 display_name: 世界树
 desc: 可检索、可批量管理的动态世界书；按关键词、范围或 Cron 条件向当前模型请求注入临时上下文。
-version: v1.6.1
+version: v1.6.2
 author: Whereis-Alice
 repo: https://github.com/Whereis-Alice/astrbot_plugin_worldtree_lore
 astrbot_version: ">=4.26.0,<5"
