@@ -166,9 +166,19 @@ kbd {
 
 /* --- ambient world tree ------------------------------------------------ */
 
-/* The page sits inside the crown of a single world tree: light filters down
-   from the canopy, the trunk and branches are drawn behind the panels, and the
-   roots fade into mist along the bottom edge. */
+/* The console is pinned high in the crown of one enormous tree. The artwork is
+   a single generated SVG: a tapered trunk, seven leaders, canopy masses placed
+   by clustering the real branch tips, aerial roots down the gutters and a
+   receding treeline behind everything. Two decisions carry the sense of scale:
+
+     - `slice` plus a viewBox whose root sits ~450px past the bottom edge, so
+       the foot of the tree is never in shot at any window size;
+     - a wide low-contrast scrim through the middle, because the panel column
+       lands there and translucent glass is only readable over quiet paint.
+
+   No SVG filter is used anywhere. The crown sways, and blurring an animated
+   subtree repaints the full viewport every frame; instead every soft mass is
+   its own object-space radial gradient whose outer stop fades to zero. */
 
 .sky {
   position: fixed;
@@ -176,134 +186,198 @@ kbd {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+
+  /* Sky-local palette. Every layer below reads only these variables, so a
+     theme is a dozen colour swaps instead of a second copy of the artwork. */
+  --sky-halo-core: #fffef4;
+  --sky-halo-mid: #eaf5dd;
+  --sky-bloom-core: #a8d585;
+  --sky-bloom-mid: #7cbb69;
+  --sky-bloom-deep: #2f7a4c;
+  --sky-wood-rim: #7a6b52;
+  --sky-wood-lit: #b5a483;
+  --sky-wood-core: #8b7a5e;
+  --sky-wood-shade: #4e4433;
+  --sky-leaf-core: #c6e394;
+  --sky-leaf-edge: #57a065;
+  --sky-bud: #f4ffd8;
+  --sky-ray: #ffffff;
+  --sky-scrim: #ffffff;
+  --sky-scrim-core: .5;
+  --sky-scrim-mid: .24;
+
+  /* daylight coming from just above and left of the crown */
   background:
-    radial-gradient(128% 62% at 50% -10%, rgb(120 200 145 / .20) 0 34%, transparent 72%),
-    radial-gradient(circle at 4% 2%, rgb(87 179 112 / .20) 0 22%, transparent 48%),
-    radial-gradient(circle at 96% 0%, rgb(49 132 82 / .16) 0 20%, transparent 46%),
-    radial-gradient(150% 44% at 50% 110%, rgb(23 69 50 / .14) 0 38%, transparent 76%),
-    linear-gradient(180deg, rgb(223 241 224 / .58), rgb(223 241 224 / 0) 46%);
+    radial-gradient(122% 86% at 52% -16%, #ffffff 0 8%, #f3fbea 32%, #e3f2dc 64%, #cfe7cd 100%);
 }
 
-/* The tree is scaled to cover, not to fit: 'slice' on the SVG lets the crown
-   sit against the top edge while the trunk runs straight past the bottom of the
-   viewport, so the page reads as standing at the foot of something enormous
-   whose base you never see. 'meet' would shrink the whole tree into view and
-   that is exactly the postcard look we are trying to avoid. */
+/* Cover, never fit. 118vw x 134vh with a 1440px floor keeps the crown in
+   proportion on a narrow window rather than shrinking the whole tree into
+   frame, which is the postcard look this replaced. */
 .sky-tree {
   position: absolute;
-  left: 0;
+  left: 50%;
   top: 0;
-  width: 100%;
-  height: 118vh;
-  opacity: .2;
+  width: 118vw;
+  min-width: 1440px;
+  height: 134vh;
+  transform: translateX(-50%);
   transform-origin: 50% 100%;
   will-change: transform;
-  animation: sway 34s ease-in-out infinite;
+  animation: sway 42s ease-in-out infinite;
 }
 
-/* under 'slice' a narrow viewport crops the canopy sideways, so gain the height
-   back instead of shrinking: a taller box keeps more of the crown in frame */
+/* under `slice` a narrow viewport crops sideways, so buy the height back */
 @media (max-width: 720px) {
-  .sky-tree {
-    height: 132vh;
-  }
+  .sky-tree { height: 152vh; }
 }
 
-.sky-crown { fill: url(#skyCrown); }
-.sky-leaves { fill: url(#skyLeaf); }
+/* -- light and air ------------------------------------------------------ */
 
-.sky-leaves-front {
-  opacity: .62;
-  translate: 0 -16px;
-}
+.sky-halo { fill: url(#skyHalo); opacity: .85; }
+#skyHalo .stop-core { stop-color: var(--sky-halo-core); }
+#skyHalo .stop-mid { stop-color: var(--sky-halo-mid); stop-opacity: .55; }
+#skyHalo .stop-fade { stop-color: var(--sky-halo-mid); stop-opacity: 0; }
 
-#skyCrown .stop-core { stop-color: var(--forest-500); stop-opacity: .34; }
-#skyCrown .stop-mid { stop-color: var(--forest-500); stop-opacity: .18; }
-#skyCrown .stop-edge { stop-color: var(--forest-500); stop-opacity: 0; }
-#skyLeaf .stop-core { stop-color: var(--forest-400); stop-opacity: 1; }
-#skyLeaf .stop-mid { stop-color: var(--forest-500); stop-opacity: .62; }
-#skyLeaf .stop-edge { stop-color: var(--forest-500); stop-opacity: 0; }
+.sky-rays { opacity: .5; }
+.sky-ray { fill: url(#skyRay); }
+#skyRay .stop-top { stop-color: var(--sky-ray); stop-opacity: .5; }
+#skyRay .stop-fade { stop-color: var(--sky-ray); stop-opacity: 0; }
 
-/* A drawn column rather than a thick stroke: the trunk has to widen on the way
-   down and grow buttress roots at the foot, which a single round-capped line
-   cannot express. It is drawn well below the viewport on purpose. */
-.sky-trunk { fill: url(#skyTrunk); }
-.sky-buttress { fill: var(--forest-900); }
+/* Gaps punched through the canopy. Same gradient as the halo so a hole reads
+   as the sky showing through rather than as a pale blob painted on top. */
+.sky-holes { opacity: .72; }
+.sky-hole { fill: url(#skyHalo); }
 
-#skyTrunk .stop-top { stop-color: var(--forest-600); stop-opacity: .85; }
-#skyTrunk .stop-foot { stop-color: var(--forest-900); stop-opacity: 1; }
+/* -- depth: the forest behind the tree ---------------------------------- */
 
-/* just enough grain to keep a 400px-wide column from looking like a bar */
-.sky-bark {
+.sky-far { opacity: .72; }
+.sky-far-crown { fill: url(#skyBloomDeep); }
+.sky-far-trunk { fill: var(--sky-wood-shade); }
+.sky-fog { fill: url(#skyBloom); }
+
+/* -- the tree itself ---------------------------------------------------- */
+
+.sky-wood { fill: url(#skyWood); opacity: .52; }
+#skyWood .stop-rim { stop-color: var(--sky-wood-rim); }
+#skyWood .stop-lit { stop-color: var(--sky-wood-lit); }
+#skyWood .stop-core { stop-color: var(--sky-wood-core); }
+#skyWood .stop-shade { stop-color: var(--sky-wood-shade); }
+
+/* bounced canopy light along the top of every limb */
+.sky-wood-lit { fill: url(#skyBloom); opacity: .16; }
+
+/* Aerial perspective: the same trunk path reused with a green wash over it,
+   which is what stops a 400px-wide column from reading as a cut-out. Drawn
+   with <use>, so it costs no extra path data. */
+.sky-wood-veil { fill: url(#skyVeil); }
+#skyVeil .stop-top { stop-color: var(--sky-bloom-mid); stop-opacity: .9; }
+#skyVeil .stop-mid { stop-color: var(--sky-bloom-mid); stop-opacity: .42; }
+#skyVeil .stop-fade { stop-color: var(--sky-bloom-mid); stop-opacity: 0; }
+
+.sky-twig { fill: var(--sky-wood-core); opacity: .3; }
+
+/* -- canopy ------------------------------------------------------------- */
+
+.sky-bloom,
+.sky-bloom-back { fill: url(#skyBloom); }
+#skyBloom .stop-core { stop-color: var(--sky-bloom-core); }
+#skyBloom .stop-mid { stop-color: var(--sky-bloom-mid); stop-opacity: .72; }
+#skyBloom .stop-fade { stop-color: var(--sky-bloom-mid); stop-opacity: 0; }
+
+.sky-bloom-deep { fill: url(#skyBloomDeep); }
+#skyBloomDeep .stop-core { stop-color: var(--sky-bloom-deep); stop-opacity: .8; }
+#skyBloomDeep .stop-mid { stop-color: var(--sky-bloom-deep); stop-opacity: .4; }
+#skyBloomDeep .stop-fade { stop-color: var(--sky-bloom-deep); stop-opacity: 0; }
+
+.sky-canopy-back { opacity: .8; }
+/* shadowed underside of each crown mass; without it the canopy is one flat tint */
+.sky-canopy-pocket { opacity: .3; }
+
+.sky-leaf { fill: url(#skyLeaf); opacity: .62; }
+.sky-leaf-back { opacity: .46; fill: var(--sky-leaf-edge); }
+#skyLeaf .stop-core { stop-color: var(--sky-leaf-core); }
+#skyLeaf .stop-edge { stop-color: var(--sky-leaf-edge); }
+
+/* new growth at the branch tips; the only hard highlights in the whole scene */
+.sky-buds { opacity: .7; }
+.sky-bud { fill: url(#skyBud); }
+#skyBud .stop-core { stop-color: var(--sky-bud); }
+#skyBud .stop-mid { stop-color: var(--sky-bud); stop-opacity: .5; }
+#skyBud .stop-fade { stop-color: var(--sky-bud); stop-opacity: 0; }
+
+/* -- gutters and framing ------------------------------------------------ */
+
+/* The panel column hides the trunk, so the left and right gutters are the only
+   place a viewer can read the tree at all: hanging roots go there. */
+.sky-tendrils { opacity: .5; }
+.sky-vine { fill: none; stroke: url(#skyVine); stroke-width: 3.4; stroke-linecap: round; }
+#skyVine .stop-top { stop-color: var(--sky-leaf-edge); stop-opacity: .7; }
+#skyVine .stop-fade { stop-color: var(--sky-leaf-edge); stop-opacity: 0; }
+.sky-vine-leaf { fill: var(--sky-leaf-core); }
+
+/* Out-of-focus foreground twigs in the four corners. They sit closer to the
+   camera than anything else, which is what gives the flat SVG its depth. */
+.sky-near { opacity: .9; }
+.sky-near-stem {
   fill: none;
-  stroke: var(--forest-600);
-  stroke-width: 5;
+  stroke: var(--sky-wood-shade);
+  stroke-width: 6;
   stroke-linecap: round;
-  opacity: .42;
+  opacity: .34;
 }
+.sky-near-leaf { fill: url(#skyLeafDeep); }
+#skyLeafDeep .stop-core { stop-color: var(--sky-leaf-edge); }
+#skyLeafDeep .stop-edge { stop-color: var(--sky-bloom-deep); }
 
-.sky-limb,
-.sky-root {
-  fill: none;
-  stroke: var(--forest-700);
-  stroke-linecap: round;
-}
+/* pollen catching the light between the near twigs and the canopy */
+.sky-bokeh-field { opacity: .6; }
+.sky-bokeh { fill: url(#skyBud); }
 
-.sky-limb-2 { stroke-width: 38; }
-.sky-limb-3 { stroke-width: 19; }
-.sky-limb-4 { stroke-width: 10.5; }
-.sky-limb-5 { stroke-width: 5.5; }
-.sky-root { stroke-width: 11; opacity: .6; }
+/* -- readability -------------------------------------------------------- */
 
-/* Aerial roots. The content column sits in the middle of the screen, so the
-   trunk is mostly hidden behind it; these hang down the left and right gutters,
-   which is the only place a viewer can actually read the tree's scale. */
-.sky-tendril {
-  fill: none;
-  stroke: var(--forest-700);
-  stroke-linecap: round;
-  opacity: .74;
-}
+/* The one concession to the UI: a broad wash that lifts the middle of the
+   canvas so translucent panels keep their contrast. Everything above is
+   painted before it; the corner twigs are painted after, so the frame stays
+   crisp while the centre goes quiet. */
+.sky-scrim { fill: url(#skyScrim); }
+#skyScrim .stop-core { stop-color: var(--sky-scrim); stop-opacity: var(--sky-scrim-core); }
+#skyScrim .stop-mid { stop-color: var(--sky-scrim); stop-opacity: var(--sky-scrim-mid); }
+#skyScrim .stop-fade { stop-color: var(--sky-scrim); stop-opacity: 0; }
 
-.sky-tendril-a { stroke-width: 13; }
-.sky-tendril-b { stroke-width: 9; }
-.sky-tendril-c { stroke-width: 6; }
-.sky-tendril-leaves { fill: var(--forest-500); opacity: .5; }
+/* -- overlays outside the SVG ------------------------------------------- */
 
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-tendril { opacity: .82; }
-
-/* Sunlight falling through the canopy. This fills the upper corners that the
-   crown alone leaves empty, and it is the reason the old drifting blobs could
-   be dropped: they read as smudges on a wide screen, a light shaft does not. */
+/* The rays inside the SVG are fixed geometry; this is the breath on top of
+   them, kept as one soft mass because striped gradients moire against the
+   leaf-vein texture on the panels. */
 .sky-shafts {
   position: absolute;
-  inset: -18vh -22% 26vh -22%;
-  background: repeating-linear-gradient(
-    99deg,
-    transparent 0 58px,
-    rgb(150 220 175 / 9%) 58px 104px,
-    transparent 104px 188px
+  inset: -18vh -20% auto -20%;
+  height: 104vh;
+  background: radial-gradient(
+    52% 100% at 50% 0%,
+    color-mix(in srgb, var(--sky-ray) 30%, transparent) 0 18%,
+    transparent 76%
   );
   mask-image: radial-gradient(74% 92% at 50% 0%, #000 0 30%, transparent 84%);
   animation: shaftbreathe 26s ease-in-out infinite;
 }
 
-/* A thinning veil rather than a wipe: the root system stays readable as roots
-   instead of being painted over with the page background. */
+/* A thinning veil rather than a wipe: the lower canopy stays visible as
+   canopy instead of being painted over with the page background. */
 .sky-mist {
   position: absolute;
   inset: auto -6% -2% -6%;
-  height: 18vh;
+  height: 20vh;
   background: linear-gradient(
     180deg,
     rgb(0 0 0 / 0),
-    color-mix(in srgb, var(--paper) 18%, transparent) 54%,
-    color-mix(in srgb, var(--paper) 46%, transparent)
+    color-mix(in srgb, var(--paper) 22%, transparent) 54%,
+    color-mix(in srgb, var(--paper) 52%, transparent)
   );
 }
 
-/* A depth vignette, not a floor. The trunk has to look like it continues past
-   the bottom edge, so nothing down here may suggest ground. */
+/* A depth vignette, not a floor. Nothing down here may suggest ground. */
 .sky-loam {
   position: absolute;
   inset: auto 0 0 0;
@@ -311,44 +385,37 @@ kbd {
   background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--forest-800) 9%, transparent));
 }
 
+/* -- after dark --------------------------------------------------------- */
+
 :is([data-theme="dark"], [data-theme="nightglow"]) .sky {
+  --sky-halo-core: #d6eddc;
+  --sky-halo-mid: #74b891;
+  --sky-bloom-core: #3d8f61;
+  --sky-bloom-mid: #2b7049;
+  --sky-bloom-deep: #0d3122;
+  --sky-wood-rim: #3a3126;
+  --sky-wood-lit: #574a31;
+  --sky-wood-core: #2f281e;
+  --sky-wood-shade: #191410;
+  --sky-leaf-core: #7fc99a;
+  --sky-leaf-edge: #23704a;
+  --sky-bud: #d9f7e2;
+  --sky-ray: #bfe8d0;
+  --sky-scrim: #05110c;
+  --sky-scrim-core: .44;
+  --sky-scrim-mid: .2;
   background:
-    radial-gradient(128% 62% at 50% -10%, rgb(69 151 96 / .26) 0 34%, transparent 72%),
-    radial-gradient(circle at 4% 2%, rgb(37 117 74 / .22) 0 22%, transparent 48%),
-    radial-gradient(circle at 96% 0%, rgb(41 130 87 / .18) 0 20%, transparent 46%),
-    radial-gradient(150% 44% at 50% 110%, rgb(11 33 25 / .5) 0 38%, transparent 76%),
-    linear-gradient(180deg, rgb(22 61 39 / .46), rgb(22 61 39 / 0) 48%);
+    radial-gradient(122% 86% at 52% -16%, #1a4030 0 8%, #123024 34%, #0c2118 66%, #07150f 100%);
 }
 
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-tree { opacity: .34; }
-
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-limb,
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-root { stroke: var(--forest-700); }
-
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-trunk,
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-buttress { fill: var(--forest-700); }
-
-:is([data-theme="dark"], [data-theme="nightglow"]) #skyTrunk .stop-top { stop-color: var(--forest-700); }
-:is([data-theme="dark"], [data-theme="nightglow"]) #skyTrunk .stop-foot { stop-color: var(--forest-700); }
-
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-bark { stroke: var(--forest-500); opacity: .32; }
-
-:is([data-theme="dark"], [data-theme="nightglow"]) .leaf-mote {
-  --mote-alpha: .3;
-  background: var(--forest-400);
-}
-
-:is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-core { stop-opacity: .34; }
-:is([data-theme="dark"], [data-theme="nightglow"]) #skyCrown .stop-mid { stop-opacity: .2; }
-
-:is([data-theme="dark"], [data-theme="nightglow"]) .sky-shafts {
-  background: repeating-linear-gradient(
-    99deg,
-    transparent 0 58px,
-    rgb(120 220 165 / 6%) 58px 104px,
-    transparent 104px 188px
-  );
-}
+/* moonlight is dimmer and comes in flatter than sun through a canopy */
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-halo { opacity: .6; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-rays { opacity: .34; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-holes { opacity: .5; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-wood { opacity: .6; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-wood-lit { opacity: .1; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-far { opacity: .6; }
+:is([data-theme="dark"], [data-theme="nightglow"]) .sky-bokeh-field { opacity: .44; }
 
 :is([data-theme="dark"], [data-theme="nightglow"]) .sky-loam {
   background:
@@ -356,54 +423,48 @@ kbd {
     linear-gradient(180deg, transparent, rgb(0 0 0 / 26%));
 }
 
-/* --- nightglow: the tree lit from the inside ---------------------------- */
+:is([data-theme="dark"], [data-theme="nightglow"]) .leaf-mote {
+  --mote-alpha: .3;
+  background: var(--forest-400);
+}
 
+/* -- nightglow: the tree lit from the inside ---------------------------- */
+
+/* Same geometry, inverted lighting model. The wood drops to a near-silhouette
+   and the leaves, buds and pollen become the only light sources, which is why
+   their opacities go up here instead of down. */
 [data-theme="nightglow"] .sky {
+  --sky-halo-core: #cafff2;
+  --sky-halo-mid: #2fd2a4;
+  --sky-bloom-core: #2bbf9c;
+  --sky-bloom-mid: #12695c;
+  --sky-bloom-deep: #06232c;
+  --sky-wood-rim: #123246;
+  --sky-wood-lit: #1d5068;
+  --sky-wood-core: #0c2434;
+  --sky-wood-shade: #06151f;
+  --sky-leaf-core: #74f3cd;
+  --sky-leaf-edge: #157a6e;
+  --sky-bud: #eafff9;
+  --sky-ray: #74f3cd;
+  --sky-scrim: #030d16;
+  --sky-scrim-core: .5;
+  --sky-scrim-mid: .24;
   background:
-    radial-gradient(120% 58% at 50% -6%, rgb(47 210 164 / .20) 0 30%, transparent 68%),
-    radial-gradient(circle at 8% 6%, rgb(56 130 214 / .18) 0 24%, transparent 52%),
-    radial-gradient(circle at 92% 2%, rgb(120 90 220 / .16) 0 22%, transparent 50%),
-    radial-gradient(140% 46% at 50% 108%, rgb(4 32 40 / .62) 0 36%, transparent 74%),
-    linear-gradient(180deg, #071726, #050b14 58%);
+    radial-gradient(120% 58% at 50% -6%, rgb(47 210 164 / .18) 0 30%, transparent 68%),
+    radial-gradient(circle at 8% 6%, rgb(56 130 214 / .16) 0 24%, transparent 52%),
+    radial-gradient(circle at 92% 2%, rgb(120 90 220 / .14) 0 22%, transparent 50%),
+    linear-gradient(180deg, #071726 0%, #050b14 62%);
 }
 
-[data-theme="nightglow"] .sky-tree {
-  opacity: .5;
-  filter: drop-shadow(0 0 26px rgb(47 210 164 / .28));
-}
-
-/* the trunk stays a silhouette so the fluorescing leaves read as the light */
-[data-theme="nightglow"] .sky-limb,
-[data-theme="nightglow"] .sky-root { stroke: #0a2231; }
-
-[data-theme="nightglow"] .sky-root { opacity: .8; }
-
-[data-theme="nightglow"] .sky-tendril { stroke: #0a2231; opacity: .8; }
-[data-theme="nightglow"] .sky-tendril-leaves { fill: var(--forest-300); opacity: .5; }
-
-/* silhouette, matching the limbs, so the fluorescing canopy stays the light source */
-[data-theme="nightglow"] .sky-buttress { fill: #0c2b38; }
-
-[data-theme="nightglow"] #skyTrunk .stop-top { stop-color: #114052; }
-[data-theme="nightglow"] #skyTrunk .stop-foot { stop-color: #071c27; }
-
-/* sap running up the bark; the one place the night theme paints light on wood */
-[data-theme="nightglow"] .sky-bark {
-  stroke: var(--forest-300);
-  stroke-width: 4;
-  opacity: .5;
-}
-
-[data-theme="nightglow"] .leaf-mote {
-  --mote-alpha: .5;
-  background: var(--forest-300);
-  box-shadow: 0 0 7px rgb(47 210 164 / .45);
-}
-
-[data-theme="nightglow"] #skyCrown .stop-core { stop-color: var(--forest-500); stop-opacity: .3; }
-[data-theme="nightglow"] #skyCrown .stop-mid { stop-color: var(--forest-600); stop-opacity: .17; }
-[data-theme="nightglow"] #skyLeaf .stop-core { stop-color: var(--forest-300); stop-opacity: .95; }
-[data-theme="nightglow"] #skyLeaf .stop-mid { stop-color: var(--forest-500); stop-opacity: .5; }
+[data-theme="nightglow"] .sky-halo { opacity: .5; }
+[data-theme="nightglow"] .sky-rays { opacity: .4; }
+[data-theme="nightglow"] .sky-wood { opacity: .72; }
+[data-theme="nightglow"] .sky-twig { opacity: .4; }
+[data-theme="nightglow"] .sky-leaf { opacity: .72; }
+[data-theme="nightglow"] .sky-buds { opacity: 1; }
+[data-theme="nightglow"] .sky-bokeh-field { opacity: .8; }
+[data-theme="nightglow"] .sky-tendrils { opacity: .62; }
 
 [data-theme="nightglow"] .sky-mist {
   background: linear-gradient(
@@ -414,14 +475,10 @@ kbd {
   );
 }
 
-/* after dark the shafts become moonlight sifting through the leaves */
-[data-theme="nightglow"] .sky-shafts {
-  background: repeating-linear-gradient(
-    99deg,
-    transparent 0 58px,
-    rgb(47 210 164 / 7%) 58px 104px,
-    transparent 104px 188px
-  );
+[data-theme="nightglow"] .leaf-mote {
+  --mote-alpha: .5;
+  background: var(--forest-300);
+  box-shadow: 0 0 7px rgb(47 210 164 / .45);
 }
 
 /* --- leaves coming loose from the canopy -------------------------------- */
@@ -531,29 +588,51 @@ kbd {
 }
 
 .brand-mark {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   flex: 0 0 auto;
   overflow: visible;
 }
 
-.brand-mark .trunk,
-.brand-mark .branches,
-.brand-mark .roots,
-.brand-mark .ground {
+.brand-mark .bm-ring {
   fill: none;
-  stroke: var(--forest-800);
+  stroke: var(--forest-400);
+  stroke-opacity: .38;
+  stroke-width: 1.1;
+}
+
+.brand-mark .bm-ring-dash {
+  stroke-opacity: .2;
+  stroke-width: .9;
+  stroke-dasharray: .8 5.2;
   stroke-linecap: round;
 }
 
-.brand-mark .trunk { stroke-width: 5; }
-.brand-mark .branches { stroke-width: 3.4; }
-.brand-mark .ground { stroke-width: 3; }
-.brand-mark .roots { stroke-width: 2.4; opacity: .5; }
-.brand-mark .leaf { stroke: var(--paper); stroke-width: 2; }
-.brand-mark .leaf-a { fill: var(--forest-500); }
-.brand-mark .leaf-b { fill: var(--forest-400); }
-.brand-mark .leaf-c { fill: var(--forest-700); }
+.brand-mark .bm-horizon {
+  fill: none;
+  stroke: var(--forest-500);
+  stroke-opacity: .55;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.brand-mark .bm-wood-base { stroke: var(--forest-700); }
+.brand-mark .bm-wood-lit { stroke: var(--forest-500); }
+.brand-mark .bm-root { stroke: var(--forest-500); opacity: .38; }
+.brand-mark .bm-halo { fill: var(--forest-300); opacity: .42; }
+.brand-mark .bm-node { fill: var(--forest-600); }
+.brand-mark .bm-rootnode { fill: var(--forest-500); opacity: .5; }
+.brand-mark .bm-core-glow { fill: var(--forest-300); opacity: .6; }
+.brand-mark .bm-core { fill: var(--forest-800); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .bm-wood-base { stroke: var(--forest-500); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .bm-wood-lit { stroke: var(--forest-400); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .bm-root { stroke: var(--forest-400); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .bm-node { fill: var(--forest-300); }
+:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .bm-core { fill: var(--forest-300); }
+
+[data-theme="nightglow"] .brand-mark .bm-halo { opacity: .46; }
+[data-theme="nightglow"] .brand-mark .bm-node { fill: #eafff8; }
 
 .top-actions {
   display: flex;
@@ -813,11 +892,14 @@ textarea {
 
 /* the buds are spaced and sized on a rhythm so the top edge scallops; without
    the base strip the shorter buds would leave gaps against the band edge */
-.crest-base { opacity: .92; }
+.crest-base { opacity: .64; }
 /* The mask lives in the element's own coordinates, before scaleY(-1) flips it.
    The buds grow toward local bottom, so fading the bottom of the mask is what
    softens the tips against the sky and keeps the base solid on the band. */
-.band-crest { mask-image: linear-gradient(180deg, #000 0 46%, rgb(0 0 0 / .5)); }
+.band-crest {
+  opacity: .86;
+  mask-image: linear-gradient(180deg, rgb(0 0 0 / .55) 0, #000 30%, rgb(0 0 0 / .34) 100%);
+}
 .crest-leaves circle { opacity: .9; }
 .crest-leaves circle:nth-child(2n) { opacity: .74; }
 .crest-leaves circle:nth-child(3n) { fill: var(--forest-400); }
@@ -2358,11 +2440,6 @@ textarea {
 
 /* --- dark theme touch-ups ---------------------------------------------- */
 
-:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .trunk,
-:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .branches,
-:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .roots,
-:is([data-theme="dark"], [data-theme="nightglow"]) .brand-mark .ground { stroke: var(--forest-300); }
-
 :is([data-theme="dark"], [data-theme="nightglow"]) .empty-tree .trunk,
 :is([data-theme="dark"], [data-theme="nightglow"]) .empty-tree .branches,
 :is([data-theme="dark"], [data-theme="nightglow"]) .empty-tree .ground { stroke: var(--forest-300); }
@@ -2553,9 +2630,12 @@ textarea {
 
 /* --- animation --------------------------------------------------------- */
 
+/* The translateX(-50%) is repeated in every keyframe on purpose: the crown is
+   centred with a transform, and an animation on the same property would drop
+   the centring for the whole run. */
 @keyframes sway {
-  0%, 100% { transform: rotate(-.4deg); }
-  50% { transform: rotate(.4deg); }
+  0%, 100% { transform: translateX(-50%) rotate(-.4deg); }
+  50% { transform: translateX(-50%) rotate(.4deg); }
 }
 
 /* Down and slightly across, tumbling as it goes. The horizontal drift is small

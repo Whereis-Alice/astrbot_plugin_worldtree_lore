@@ -182,6 +182,16 @@
           /* storage is optional in this harness */
         }
 
+        /* index.html paints the stored theme from an inline <head> script, but
+           this harness only imports the page <body>. Mirror that bootstrap here
+           so the first frame already uses the right palette; otherwise the
+           theme flip starts ~100 colour transitions whose mid-flight values
+           show up in screenshots as light-theme buttons on a night canvas. */
+        if (visualTheme === "light" || visualTheme === "dark" || visualTheme === "nightglow") {
+          document.documentElement.dataset.theme = visualTheme;
+          document.documentElement.dataset.themeMode = visualTheme;
+        }
+
         window.AstrBotPluginPage = {
           ready: async () => ({locale: "zh-CN", isDark: visualTheme === "dark"}),
           getLocale: () => "zh-CN",
