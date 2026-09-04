@@ -435,6 +435,24 @@
               </div>
             </fieldset>
 
+            <fieldset class="form-section" data-section="model">
+              <legend>模型覆盖（可选）</legend>
+              <p class="field-note" id="modelNote">条目生效期间临时改用指定的模型或提供商，条目失效后自动回到 AstrBot 的默认设置。两项都留空表示不改动。</p>
+              <div class="form-grid">
+                <label>
+                  <span>模型名</span>
+                  <input id="modelInput" name="model" type="text" maxlength="200" placeholder="例如：deepseek-chat" />
+                  <small>替换本轮请求的模型名，需要当前提供商支持它。</small>
+                </label>
+                <label>
+                  <span>提供商 ID</span>
+                  <input id="providerInput" name="provider" type="text" maxlength="200" list="providerOptions" placeholder="留空表示沿用当前提供商" />
+                  <datalist id="providerOptions"></datalist>
+                  <small>整体换一个服务商，适合某个模型会拦截角色设定的情况。</small>
+                </label>
+              </div>
+            </fieldset>
+
             <fieldset class="form-section">
               <legend>注入内容</legend>
               <div class="form-grid">

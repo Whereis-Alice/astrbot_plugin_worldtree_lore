@@ -399,5 +399,99 @@ class InterchangeAndSchedulerTests(unittest.TestCase):
         self.assertEqual(_normalise_weekday_field("mon-fri/2"), "mon-fri/2")
 
 
+class CharacterEntryTests(unittest.TestCase):
+    """Covers the character template and its per-entry model override."""
+
+    def setUp(self) -> None:
+        self.config = FakeConfig(entry_storage=[], library_revision=0, data_version=3)
+        self.library = WorldTreeLibrary(self.config)
+        self.library.load()
+
+    def test_overrides_survive_the_full_round_trip(self) -> None:
+        entry = make_entry(
+            template="character",
+            model=" deepseek-chat ",
+            provider=" local/deepseek ",
+        )
+        self.assertEqual(entry.model, "deepseek-chat")
+        self.assertEqual(entry.provider, "local/deepseek")
+        restored = WorldTreeEntry.from_dict(entry.to_dict())
+        self.assertEqual(restored.model, "deepseek-chat")
+        self.assertEqual(restored.summary()["provider"], "local/deepseek")
+
+    def test_overlong_override_is_rejected(self) -> None:
+        with self.assertRaises(EntryValidationError):
+            make_entry(model="m" * 201)
+
+    def test_library_update_persists_overrides(self) -> None:
+        created = self.library.create(
+            {
+                "name": "此小鬼",
+                "content": "角色卡正文",
+                "keywords": ["小鬼"],
+                "template": "character",
+            }
+        )
+        self.assertEqual(created.model, "")
+        self.library.update(
+            created.id,
+            {"model": "deepseek-chat", "provider": "local/deepseek"},
+            expected_revision=self.library.revision,
+        )
+        stored = self.library.get(created.id)
+        self.assertEqual(stored.model, "deepseek-chat")
+        self.assertEqual(stored.provider, "local/deepseek")
+
+    def test_character_template_sorts_before_the_general_ones(self) -> None:
+        self.library.create(
+            {"name": "常规", "content": "x", "keywords": ["k"], "template": "common"}
+        )
+        self.library.create(
+            {"name": "角色", "content": "x", "keywords": ["r"], "template": "character"}
+        )
+        names = [item["name"] for item in self.library.paged_entries(sort="template")["entries"]]
+        self.assertEqual(names[0], "角色")
+
+    def test_only_one_character_entry_stays_active_per_session(self) -> None:
+        alice = make_entry(name="爱丽丝", template="character", keywords=["爱丽丝"], priority=5)
+        bob = make_entry(name="鲍勃", template="character", keywords=["鲍勃"], priority=5)
+        lore = make_entry(name="雾港档案", template="common", keywords=["雾港"], priority=50)
+        ctx = ActivationContext(session_id="room-1")
+        store = WorldTreeSessionStore()
+        exclusive = frozenset({"character"})
+
+        self.assertTrue(alice.try_activate(ctx, "爱丽丝在吗"))
+        store.activate(ctx, [alice], allow_same_priority=True, exclusive_templates=exclusive)
+        self.assertTrue(lore.try_activate(ctx, "说说雾港"))
+        store.activate(ctx, [lore], allow_same_priority=True, exclusive_templates=exclusive)
+        self.assertTrue(bob.try_activate(ctx, "鲍勃你好"))
+        store.activate(ctx, [bob], allow_same_priority=True, exclusive_templates=exclusive)
+
+        names = [entry.name for entry in store.active_for(ctx)]
+        self.assertIn("鲍勃", names)
+        # Two personas in one reply would fight over voice, so the newer one wins.
+        self.assertNotIn("爱丽丝", names)
+        # Ordinary lore has nothing to do with persona swapping and stays put.
+        self.assertIn("雾港档案", names)
+
+    def test_deactivate_ends_now_but_keeps_the_entry_triggerable(self) -> None:
+        definition = make_entry(duration=600, times=0)
+        ctx = ActivationContext(session_id="room-2")
+        store = WorldTreeSessionStore()
+
+        self.assertTrue(definition.try_activate(ctx, "雾港"))
+        store.activate(ctx, [definition], allow_same_priority=True)
+        self.assertEqual(store.deactivate(ctx.session_id, [definition.id]), [definition.id])
+        self.assertEqual(store.active_for(ctx), [])
+        # Unlike a block, nothing is left behind that would stop a re-trigger.
+        _, blocked = store.status(ctx.session_id)
+        self.assertEqual(blocked, set())
+        self.assertTrue(definition.try_activate(ctx, "雾港"))
+        self.assertEqual(
+            store.activate(ctx, [definition], allow_same_priority=True),
+            [definition.id],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

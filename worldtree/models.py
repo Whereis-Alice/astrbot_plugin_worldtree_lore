@@ -24,7 +24,12 @@ MAX_CRON_LENGTH = 128
 MAX_DURATION_SECONDS = 31_536_000
 MAX_TIMES = 1_000_000
 MAX_MATCH_TEXT_CHARS = 6_000
+MAX_MODEL_NAME_LENGTH = 200
 DEFAULT_CRON_WINDOW_SECONDS = 300
+
+#: Template key whose entries behave like a character card: they own the reply
+#: persona, so only one of them should be active in a session at a time.
+CHARACTER_TEMPLATE = "character"
 
 
 class EntryValidationError(ValueError):
@@ -67,6 +72,18 @@ class EntryTemplate:
 
 
 ENTRY_TEMPLATES: dict[str, EntryTemplate] = {
+    "character": EntryTemplate(
+        CHARACTER_TEMPLATE,
+        "角色条目",
+        {
+            "enabled": True,
+            "priority": 5,
+            "keywords": [],
+            "duration": 1_800,
+            "times": 0,
+            "probability": 1.0,
+        },
+    ),
     "common": EntryTemplate(
         "common",
         "常规条目",
@@ -262,6 +279,21 @@ def _normalise_string_list(
     return result
 
 
+def _normalise_model_name(value: Any, field_name: str) -> str:
+    """Validate an optional model / provider override; empty means "keep default"."""
+
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise EntryValidationError(f"{field_name}必须是文本")
+    text = value.strip()
+    if len(text) > MAX_MODEL_NAME_LENGTH:
+        raise EntryValidationError(
+            f"{field_name}长度不能超过 {MAX_MODEL_NAME_LENGTH} 个字符"
+        )
+    return text
+
+
 def _normalise_id(value: Any) -> str:
     if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{8,80}", value):
         return value
@@ -339,6 +371,8 @@ class WorldTreeEntry:
     folder: str = ""
     tags: list[str] = field(default_factory=list)
     template: str = "common"
+    model: str = ""
+    provider: str = ""
     created_at: int = field(default_factory=lambda: int(time.time()))
     updated_at: int = field(default_factory=lambda: int(time.time()))
     _activated_at: float | None = field(default=None, init=False, repr=False)
@@ -433,6 +467,9 @@ class WorldTreeEntry:
             case_insensitive=True,
         )
 
+        model = _normalise_model_name(value("model", ""), "覆盖模型名")
+        provider = _normalise_model_name(value("provider", ""), "覆盖提供商 ID")
+
         entry = cls(
             id=_normalise_id(data.get("id")),
             name=name,
@@ -460,6 +497,8 @@ class WorldTreeEntry:
             folder=folder,
             tags=tags,
             template=template,
+            model=model,
+            provider=provider,
             created_at=_normalise_timestamp(data.get("created_at"), now),
             updated_at=_normalise_timestamp(data.get("updated_at"), now),
         )
@@ -530,6 +569,8 @@ class WorldTreeEntry:
             "folder": self.folder,
             "tags": list(self.tags),
             "template": self.template,
+            "model": self.model,
+            "provider": self.provider,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -553,6 +594,8 @@ class WorldTreeEntry:
             "folder": self.folder,
             "tags": list(self.tags),
             "template": self.template,
+            "model": self.model,
+            "provider": self.provider,
             "updated_at": self.updated_at,
             "preview": preview,
         }

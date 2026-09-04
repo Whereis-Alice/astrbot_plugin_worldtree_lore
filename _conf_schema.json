@@ -26,6 +26,25 @@
     "hint": "关闭后，新激活的同优先级条目会替换旧条目；开启后会按名称稳定排序并共同注入。",
     "default": true
   },
+  "character_injection_target": {
+    "type": "string",
+    "description": "角色条目注入位置",
+    "hint": "角色条目决定“机器人是谁”，默认放进 system_prompt 以获得最高权重。选“follow”表示跟随上面的通用注入位置。",
+    "options": ["system_prompt", "extra_user_content", "follow"],
+    "default": "system_prompt"
+  },
+  "single_character_entry": {
+    "type": "bool",
+    "description": "同一会话只保留一个角色条目",
+    "hint": "开启后新角色条目生效时会自动结束上一个角色条目，避免两份人格互相打架。关闭则允许多个角色条目叠加。",
+    "default": true
+  },
+  "enable_model_switch": {
+    "type": "bool",
+    "description": "允许条目切换模型或提供商",
+    "hint": "开启后，条目里填写的“模型覆盖 / 提供商覆盖”只在该条目生效期间起作用，过期自动回到 AstrBot 的默认设置。关闭则忽略这两个字段。",
+    "default": true
+  },
   "session_idle_minutes": {
     "type": "int",
     "description": "会话运行态保留分钟数",

@@ -71,6 +71,9 @@ const refs = {
   applyTemplateDefaults: $("#applyTemplateDefaultsButton"),
   cron: $("#cronInput"),
   scope: $("#scopeInput"),
+  model: $("#modelInput"),
+  provider: $("#providerInput"),
+  providerOptions: $("#providerOptions"),
   content: $("#contentInput"),
   importDialog: $("#importDialog"),
   importForm: $("#importForm"),
@@ -98,6 +101,9 @@ const PREF_PREFIX = "worldtree.";
    locally, so the console can stay dark while AstrBot itself is light. */
 const THEME_MODES = ["auto", "light", "dark", "nightglow"];
 const DEFAULT_SORT = "priority";
+/* Mirrors CHARACTER_TEMPLATE in worldtree/models.py: the one template whose
+   empty-keyword case needs its own explanation in the editor. */
+const CHARACTER_TEMPLATE = "character";
 const DEFAULT_PAGE_SIZE = 30;
 
 const SORT_LABELS = {
@@ -581,6 +587,10 @@ function cardFor(entry) {
     meta.append(badge(`概率 ${Math.round(entry.probability * 100)}%`, "trigger-pill"));
   }
   if ((entry.scope || []).length) meta.append(badge("范围限定", "trigger-pill"));
+  // A model or provider override changes which brain answers, and that is
+  // invisible in the entry text, so it is worth a pill of its own.
+  if (entry.model) meta.append(badge(`模型 ${entry.model}`, "override-pill"));
+  if (entry.provider) meta.append(badge(`提供商 ${entry.provider}`, "override-pill"));
   for (const tag of entry.tags || []) meta.append(badge(`#${tag}`, "tag"));
   const updated = relativeTime(entry.updated_at);
   if (updated) meta.append(badge(`更新于 ${updated}`, "meta-note"));
@@ -982,6 +992,8 @@ function setFormValues(entry) {
   refs.keywordMode.value = entry.keyword_mode || "modern";
   refs.cron.value = entry.cron || "";
   refs.scope.value = (entry.scope || []).join("\n");
+  refs.model.value = entry.model || "";
+  refs.provider.value = entry.provider || "";
   refs.content.value = entry.content || "";
   updateEditorGuidance();
   updateKeywordWarning();
@@ -1032,6 +1044,12 @@ async function openEditor(entryId) {
 // entry shares the same fields, so instead of hiding controls we explain what a
 // preset already did. Keys mirror ENTRY_TEMPLATES in worldtree/models.py.
 const TEMPLATE_NOTES = {
+  character: {
+    template:
+      "角色条目：优先级 5（压过普通设定），命中后生效 1800 秒、不限次数，单独包裹后注入系统提示，用来决定“机器人是谁”。",
+    trigger:
+      "填角色名、称呼或口头禅等唤醒词；留空则只能用「世界树 固定 <名称>」手动挂上。默认同一会话只保留一个生效中的角色条目。",
+  },
   common: {
     template: "常规条目：优先级 50，命中后生效 180 秒、最多 5 次，靠关键词触发。",
     trigger: "一行一个关键词。普通文本按字面量匹配，正则要显式写成 re:<表达式>。",
@@ -1119,16 +1137,26 @@ function updateKeywordWarning() {
   // Legacy entries are the only place bare patterns still work, so say so and
   // offer the one-click rewrite that makes the entry mode-independent.
   refs.keywordLegacyHint.hidden = !legacy;
+  const lines = refs.keywords.value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
   const suspicious = legacy
     ? []
-    : refs.keywords.value
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line && !line.toLowerCase().startsWith("re:") && REGEX_LOOKALIKE.test(line));
-  refs.keywordWarning.hidden = suspicious.length === 0;
-  refs.keywordWarning.textContent = suspicious.length
-    ? `「${suspicious[0]}」在字面量优先模式下只会匹配这几个字符本身。想命中任意消息请写成 re:.*，或把关键词模式切到「兼容旧世界书」。`
-    : "";
+    : lines.filter((line) => !line.toLowerCase().startsWith("re:") && REGEX_LOOKALIKE.test(line));
+  // A keyword-less character entry is legal but inert, which reads a lot like
+  // "always on" if nobody says otherwise.
+  const inertCharacter =
+    refs.template.value === CHARACTER_TEMPLATE && !lines.length && !refs.cron.value.trim();
+  let warning = "";
+  if (suspicious.length) {
+    warning = `「${suspicious[0]}」在字面量优先模式下只会匹配这几个字符本身。想命中任意消息请写成 re:.*，或把关键词模式切到「兼容旧世界书」。`;
+  } else if (inertCharacter) {
+    warning =
+      "这个角色条目没有触发词，不会自己生效。补一个唤醒词，或用「世界树 固定 <名称>」在会话里手动挂上。";
+  }
+  refs.keywordWarning.hidden = !warning;
+  refs.keywordWarning.textContent = warning;
 }
 
 // Prefixing every line with re: makes a legacy entry match exactly the same
@@ -1155,6 +1183,28 @@ async function modernisePendingKeywords() {
   showToast("已改写为 re: 形式，记得保存", "success");
 }
 
+/* Provider IDs live in the AstrBot config, not here, so the editor asks the
+   running instance for them and offers a picker instead of blind typing. */
+async function loadProviderOptions() {
+  if (!refs.providerOptions) return;
+  try {
+    const result = await bridge.apiGet("providers");
+    const providers = Array.isArray(result?.providers) ? result.providers : [];
+    refs.providerOptions.replaceChildren();
+    for (const item of providers) {
+      if (!item?.id) continue;
+      const option = create("option");
+      option.value = item.id;
+      const label = [item.model, item.type].filter(Boolean).join(" · ");
+      if (label) option.label = label;
+      refs.providerOptions.append(option);
+    }
+  } catch {
+    /* A missing provider list must not break the console: the field simply
+       stays a plain text input. */
+  }
+}
+
 function formPayload() {
   const name = refs.name.value.trim();
   const content = refs.content.value;
@@ -1173,6 +1223,8 @@ function formPayload() {
     keywords: splitList(refs.keywords.value),
     keyword_mode: refs.keywordMode.value,
     cron: refs.cron.value.trim(),
+    model: refs.model.value.trim(),
+    provider: refs.provider.value.trim(),
     scope: splitList(refs.scope.value),
     content,
   };
@@ -1671,6 +1723,7 @@ async function initialise() {
     $("#pageTitle").textContent = document.title;
     await loadEntries();
     await loadDiagnostics();
+    void loadProviderOptions();
     bridge.onContext?.((nextContext) => applyPageContext(nextContext || {}));
   } catch (error) {
     setConnection("error", "初始化失败");

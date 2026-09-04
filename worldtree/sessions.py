@@ -33,12 +33,34 @@ class WorldTreeSessionStore:
         state.touched_at = time.time()
         return state
 
+    @staticmethod
+    def _evict_conflicts(
+        state: _SessionState,
+        instance: WorldTreeEntry,
+        *,
+        allow_same_priority: bool,
+        exclusive_templates: frozenset[str],
+    ) -> None:
+        """Drop already-active entries that cannot coexist with a new arrival."""
+
+        for old_id, old in list(state.active.items()):
+            if old_id == instance.id:
+                continue
+            if instance.template in exclusive_templates and old.template == instance.template:
+                # Character-card style entries own the reply persona, so two of
+                # them in one session would fight over voice and formatting.
+                state.active.pop(old_id, None)
+                continue
+            if not allow_same_priority and old.priority == instance.priority:
+                state.active.pop(old_id, None)
+
     def activate(
         self,
         ctx: ActivationContext,
         entries: Iterable[WorldTreeEntry],
         *,
         allow_same_priority: bool,
+        exclusive_templates: frozenset[str] = frozenset(),
     ) -> list[str]:
         """Attach newly triggered entries without refreshing existing lifetimes."""
 
@@ -54,10 +76,12 @@ class WorldTreeSessionStore:
                 continue
             instance = definition.clone_runtime()
             instance.enter_session()
-            if not allow_same_priority:
-                for old_id, old in list(state.active.items()):
-                    if old.priority == instance.priority and old_id != instance.id:
-                        state.active.pop(old_id, None)
+            self._evict_conflicts(
+                state,
+                instance,
+                allow_same_priority=allow_same_priority,
+                exclusive_templates=exclusive_templates,
+            )
             state.active[instance.id] = instance
             # A scheduled signal is consumed only after a session actually
             # accepts the entry. A blocked session must not steal the signal
@@ -72,6 +96,7 @@ class WorldTreeSessionStore:
         definition: WorldTreeEntry,
         *,
         allow_same_priority: bool,
+        exclusive_templates: frozenset[str] = frozenset(),
     ) -> bool:
         """Manually activate one scope-permitted entry for this session only."""
 
@@ -84,12 +109,33 @@ class WorldTreeSessionStore:
             return True
         instance = definition.clone_runtime()
         instance.enter_session()
-        if not allow_same_priority:
-            for old_id, old in list(state.active.items()):
-                if old.priority == instance.priority and old_id != instance.id:
-                    state.active.pop(old_id, None)
+        self._evict_conflicts(
+            state,
+            instance,
+            allow_same_priority=allow_same_priority,
+            exclusive_templates=exclusive_templates,
+        )
         state.active[instance.id] = instance
         return True
+
+    def deactivate(self, session_id: str, entry_ids: Iterable[str]) -> list[str]:
+        """End the given activations right now, leaving blocks untouched.
+
+        Unlike :meth:`block`, this does not stop the entry from triggering again
+        on the next message; it only cuts the current lifetime short.
+        """
+
+        state = self._states.get(session_id)
+        if not state:
+            return []
+        state.touched_at = time.time()
+        removed: list[str] = []
+        for entry_id in entry_ids:
+            if state.active.pop(entry_id, None) is not None:
+                removed.append(entry_id)
+        if not state.active and not state.blocked_ids:
+            self._states.pop(session_id, None)
+        return removed
 
     def block(self, session_id: str, entry_ids: Iterable[str]) -> list[str]:
         state = self._state(session_id)

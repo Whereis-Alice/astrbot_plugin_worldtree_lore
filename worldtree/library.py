@@ -37,8 +37,9 @@ SORT_MODES: tuple[str, ...] = (
 )
 STATUS_FILTERS: tuple[str, ...] = ("all", "enabled", "disabled", "scheduled", "scoped")
 
-#: Template ordering follows the declaration order of ENTRY_TEMPLATES, which
-#: runs from the most general template to the most narrowly scoped one.
+#: Template ordering follows the declaration order of ENTRY_TEMPLATES: the
+#: persona-defining character template first, then the general templates, then
+#: the narrowly scoped ones.
 _TEMPLATE_ORDER: dict[str, int] = {key: index for index, key in enumerate(ENTRY_TEMPLATES)}
 
 
@@ -355,6 +356,8 @@ class WorldTreeLibrary:
             "folder",
             "tags",
             "template",
+            "model",
+            "provider",
         }
         data = existing.to_dict()
         for key in allowed:

@@ -112,6 +112,7 @@
 
 /* light accents are tuned so the small template pill text still clears
    WCAG AA (>= 4.5:1) on top of its own 12% tint */
+[data-template="character"] { --tpl: #6a4c93; }
 [data-template="common"] { --tpl: #27734c; }
 [data-template="resident"] { --tpl: #17563a; }
 [data-template="chance"] { --tpl: #8c5932; }
@@ -119,6 +120,7 @@
 [data-template="group"] { --tpl: #486c24; }
 [data-template="user"] { --tpl: #3e6a89; }
 
+:is([data-theme="dark"], [data-theme="nightglow"]) [data-template="character"] { --tpl: #bda4ec; }
 :is([data-theme="dark"], [data-theme="nightglow"]) [data-template="common"] { --tpl: #6ec38f; }
 :is([data-theme="dark"], [data-theme="nightglow"]) [data-template="resident"] { --tpl: #4fb886; }
 :is([data-theme="dark"], [data-theme="nightglow"]) [data-template="chance"] { --tpl: #d9a674; }
@@ -1670,6 +1672,7 @@ textarea {
 .trigger-pill,
 .template-pill,
 .legacy-pill,
+.override-pill,
 .meta-note {
   display: inline-flex;
   align-items: center;
@@ -1693,6 +1696,14 @@ textarea {
 .folder-pill { color: var(--forest-800); background: var(--moss); }
 .trigger-pill { color: var(--muted); background: color-mix(in srgb, var(--moss) 56%, transparent); }
 .tag { color: var(--forest-700); background: color-mix(in srgb, var(--forest-300) 36%, var(--paper)); }
+
+/* a model or provider override answers with a different brain, so it gets a
+   hue of its own instead of blending into the grey trigger pills */
+.override-pill {
+  color: #6a4c93;
+  background: color-mix(in srgb, #6a4c93 12%, transparent);
+  border: 1px solid color-mix(in srgb, #6a4c93 30%, transparent);
+}
 
 /* --warning is redefined per theme, so this pill needs no dark overrides */
 .legacy-pill {
@@ -2458,6 +2469,12 @@ textarea {
 :is([data-theme="dark"], [data-theme="nightglow"]) .folder-pill,
 :is([data-theme="dark"], [data-theme="nightglow"]) .page-button,
 :is([data-theme="dark"], [data-theme="nightglow"]) .band-tool { color: var(--forest-300); }
+
+:is([data-theme="dark"], [data-theme="nightglow"]) .override-pill {
+  color: #cdb8f5;
+  background: color-mix(in srgb, #cdb8f5 14%, transparent);
+  border-color: color-mix(in srgb, #cdb8f5 32%, transparent);
+}
 
 :is([data-theme="dark"], [data-theme="nightglow"]) .status-badge.enabled { color: #bcecca; background: #163f29; }
 :is([data-theme="dark"], [data-theme="nightglow"]) .status-badge.disabled { color: #f2bbb5; background: #4a2927; }

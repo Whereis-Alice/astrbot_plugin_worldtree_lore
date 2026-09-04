@@ -151,7 +151,7 @@ class WebUiContractTests(unittest.TestCase):
         self.assertIn('id="keywordWarning"', markup)
         self.assertIn('id="applyTemplateDefaultsButton"', markup)
         self.assertIn("const TEMPLATE_NOTES = {", script)
-        for key in ("common", "resident", "chance", "schedule", "group", "user"):
+        for key in ("character", "common", "resident", "chance", "schedule", "group", "user"):
             self.assertIn(f"  {key}: {{", script)
         self.assertIn("DEFAULT_TRIGGER_NOTE", script)
         self.assertIn("function updateEditorGuidance()", script)
@@ -216,6 +216,48 @@ class WebUiContractTests(unittest.TestCase):
         self.assertGreater(shared, 40)
         self.assertEqual(styles.count('[data-theme="dark"]'), shared + 1)
 
+
+    def test_character_entries_can_override_the_answering_model(self) -> None:
+        markup = (ROOT / "pages" / "worldtree" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        script = (ROOT / "pages" / "worldtree" / "app.js").read_text(encoding="utf-8")
+        styles = (ROOT / "pages" / "worldtree" / "style.css").read_text(
+            encoding="utf-8"
+        )
+        main = (ROOT / "main.py").read_text(encoding="utf-8")
+
+        # A character card is useless if the model it needs refuses to play it,
+        # so the override lives on the entry, and the picker is filled from the
+        # running AstrBot instance instead of asking people to memorise IDs.
+        self.assertIn('id="modelInput"', markup)
+        self.assertIn('id="providerInput"', markup)
+        self.assertIn('id="providerOptions"', markup)
+        self.assertIn("refs.model", script)
+        self.assertIn("refs.provider.value", script)
+        self.assertIn('bridge.apiGet("providers")', script)
+        self.assertIn('badge(`模型 ${entry.model}`, "override-pill")', script)
+        self.assertIn(".override-pill {", styles)
+        self.assertIn('[data-template="character"]', styles)
+        self.assertIn("/providers", main)
+        self.assertIn("def web_providers", main)
+
+        # The provider is chosen in the waiting hook because AstrBot builds the
+        # agent right after it; that hook must never return a truthy value, or
+        # the whole LLM request would be cancelled.
+        self.assertIn("async def on_waiting_llm_request", main)
+        self.assertIn("SELECTED_PROVIDER_EXTRA", main)
+
+    def test_active_entries_can_be_stopped_on_demand(self) -> None:
+        main = (ROOT / "main.py").read_text(encoding="utf-8")
+        sessions = (ROOT / "worldtree" / "sessions.py").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        # Ending an activation early is not the same as blocking it: the entry
+        # may trigger again on the next message, and the command says so.
+        self.assertIn('@worldtree.command("终止"', main)
+        self.assertIn("def deactivate(", sessions)
+        self.assertIn("世界树 终止", readme)
 
     def test_plugin_logo_is_a_square_png(self) -> None:
         logo = ROOT / "logo.png"
